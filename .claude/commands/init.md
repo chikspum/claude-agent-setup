@@ -36,9 +36,9 @@ Before generating anything, read one existing tool in the target language to mat
 - `tools/python/<name>.py` — uses `SkillInput` / `SkillOutput` pattern from `skills.py`
 - `tools/python/test_<name>.py` — `pytest` test with at least one happy-path and one edge-case test
 
-**Go** → creates 2 files:
-- `tools/go/<name>.go` — exports `Run(ctx context.Context, args Args) (Result, error)` function
-- `tools/go/<name>_test.go` — `go test` file with table-driven tests
+**Go** → creates 2 files inside a new subdirectory:
+- `tools/go/<name>/<name>.go` — package `<name>`, imports shared types from the root module (`tools "github.com/your-org/claude-agent-setup/tools/go"`), exports `Run(ctx context.Context, args tools.Args) (tools.Result, error)`
+- `tools/go/<name>/<name>_test.go` — `go test` file with table-driven tests, package `<name>_test`
 
 **C++** → creates 3 things:
 - `tools/cpp/<name>.h` — public header with `extern "C"` FFI declaration
@@ -48,7 +48,7 @@ Before generating anything, read one existing tool in the target language to mat
 ### 4. Build and test
 After creating the files:
 - Python: `cd tools/python && uv run pytest test_<name>.py -v`
-- Go: `cd tools/go && go build ./... && go test ./<name>_test.go -v`
+- Go: `cd tools/go && go build ./... && go test ./<name>/... -v`
 - C++: `cd tools/cpp && cmake --build build && ctest --test-dir build -R <name>`
 
 If build or tests fail, fix the generated code before reporting done. Do not leave a scaffolded component that does not compile.
@@ -59,8 +59,8 @@ If build or tests fail, fix the generated code before reporting done. Do not lea
 ## Created: <language>/<name>
 
 Files:
-- tools/<language>/<name>.<ext>       — [one-line description of what it does]
-- tools/<language>/test_<name>.<ext>  — [N tests: what they cover]
+- tools/<language>/<name>/<name>.<ext>       — [one-line description of what it does]
+- tools/<language>/<name>/<name>_test.<ext>  — [N tests: what they cover]
 
 Build: PASS
 Tests: N/N passed

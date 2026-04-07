@@ -135,6 +135,38 @@ overrides.
 - Errors wrapped with `fmt.Errorf("context: %w", err)`
 - Tests: `go test ./...`, files named `*_test.go`
 
+**Go Tool Pattern — mandatory for all new tools in `tools/go/`:**
+
+Every tool lives in its own subdirectory (`tools/go/<name>/`) and MUST export a
+`Run` function with the exact signature below. Before writing a new tool,
+**read `tools/go/tools.go` first** to get the `Args` and `Result` types.
+
+```go
+// tools/go/<name>/<name>.go
+package <name>
+
+import (
+    "context"
+    "fmt"
+
+    tools "github.com/your-org/claude-agent-setup/tools/go"
+)
+
+// Run implements the standard tool interface.
+func Run(ctx context.Context, args tools.Args) (tools.Result, error) {
+    if args.Data == "" {
+        return tools.Result{}, fmt.Errorf("<name>: Data must not be empty")
+    }
+    // your logic here
+    return tools.Result{Output: "...", Success: true}, nil
+}
+```
+
+Do NOT invent a custom struct (e.g. `Fetch`, `FetchMany`, `Config`) as the **primary
+entry point**. The public API must be `Run(ctx context.Context, args tools.Args) (tools.Result, error)`.
+Internal helper functions and types can be unexported or exported as needed, but
+`Run` is the canonical entry point that orchestrators call.
+
 ### C++
 - Standard: C++17
 - Formatter: `clang-format` (`.clang-format` in root)
