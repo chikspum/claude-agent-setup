@@ -4,6 +4,18 @@ Scaffold a new tool component following the project's existing patterns.
 
 `$ARGUMENTS` format: `<language> <name>` — e.g., `python word_counter`, `go file_watcher`, `cpp image_compress`
 
+## Routing
+
+`/init` always delegates to the language agent that owns the target directory:
+
+- `python` → delegate to **python-agent** (owns `tools/python/`)
+- `go` → delegate to **go-agent** (owns `tools/go/`)
+- `cpp` → delegate to **cpp-agent** (owns `tools/cpp/`)
+
+The language agent follows the steps below. The orchestrator does not scaffold files directly.
+
+---
+
 ## Steps
 
 ### 1. Validate input

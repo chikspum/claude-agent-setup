@@ -2,6 +2,16 @@
 
 Review all uncommitted changes for quality, security, and correctness.
 
+## Routing
+
+`/review` is a cross-cutting command. Run it from the **orchestrator** or directly:
+
+- If changes touch only one language → the orchestrator may delegate the language-specific checks (bugs, quality) to that language's agent, then aggregate results
+- If changes touch multiple languages → orchestrator delegates to each relevant agent in parallel, then merges the reports into one verdict
+- Security and secrets checks (steps 1 and 3) are always done by whoever runs the command — never delegated, as they are cross-cutting by nature
+
+---
+
 Steps:
 1. Run `git diff --staged` and `git diff` to see all changes
 2. For each changed file, check:

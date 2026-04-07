@@ -4,6 +4,18 @@ Documentation generator — reads a target file or module and generates or updat
 
 `$ARGUMENTS` should be a file path, directory, or module name.
 
+## Routing
+
+Before starting, identify which directory the target lives in:
+
+- `tools/python/` or `*.py` → delegate to **python-agent**
+- `tools/go/` or `*.go` → delegate to **go-agent**
+- `tools/cpp/` or `*.cpp` / `*.h` / `*.hpp` → delegate to **cpp-agent**
+- Spans multiple languages → **orchestrator** delegates each language separately
+- Agent profiles, CLAUDE.md → handle directly (no delegation)
+
+---
+
 Steps:
 1. **Identify the target.** Resolve the path:
    - If it's a file, read it fully

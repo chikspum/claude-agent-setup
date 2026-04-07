@@ -4,7 +4,21 @@ Bug fixer — finds the root cause of an error or bug description, applies a min
 
 `$ARGUMENTS` should be an error message, stack trace, or plain-language bug description.
 
-Steps:
+## Routing
+
+Before starting, identify which directory contains the broken code:
+
+- `tools/python/` or `*.py` → delegate to **python-agent**
+- `tools/go/` or `*.go` → delegate to **go-agent**
+- `tools/cpp/` or `*.cpp` / `*.h` → delegate to **cpp-agent**
+- Spans multiple languages → **orchestrator** coordinates, delegates per-language fixes separately
+- Config, agents, CLAUDE.md → handle directly (no delegation)
+
+Pass the full error message and file path to the sub-agent. Do not start the steps below until the correct agent is identified.
+
+---
+
+## Steps
 1. **Parse the input.** Extract:
    - File names or module names mentioned in the error
    - Function or method names

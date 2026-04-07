@@ -2,6 +2,19 @@
 
 Deep security scan of the entire codebase.
 
+## Routing
+
+`/security-scan` is always run by the **orchestrator** (or directly if no orchestrator is active):
+
+- Hardcoded secrets and file permission checks — done directly (cross-cutting, no delegation)
+- Language-specific dangerous patterns — delegate to each language agent in parallel:
+  - Python patterns → **python-agent**
+  - Go patterns → **go-agent**
+  - C++ patterns → **cpp-agent**
+- Orchestrator aggregates all results into one severity-grouped report
+
+---
+
 Scan for:
 
 ## 1. Hardcoded secrets

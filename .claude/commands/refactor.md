@@ -2,6 +2,18 @@
 
 Refactor the specified file or module ($ARGUMENTS) for improved quality.
 
+## Routing
+
+Before starting, identify which directory the target lives in:
+
+- `tools/python/` or `*.py` → delegate to **python-agent**
+- `tools/go/` or `*.go` → delegate to **go-agent**
+- `tools/cpp/` or `*.cpp` / `*.h` → delegate to **cpp-agent**
+- Spans multiple languages → **orchestrator** refactors each part separately via the relevant agent
+- Config, agents, CLAUDE.md → handle directly (no delegation)
+
+---
+
 **Rules:**
 - Do NOT change external behavior or API contracts
 - Do NOT add new features
