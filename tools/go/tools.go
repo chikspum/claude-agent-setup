@@ -6,13 +6,22 @@ import "context"
 
 // Args holds input for a tool invocation.
 type Args struct {
-	Data    string
+	// Data is the primary input — typically a URL, file path, or raw text
+	// depending on the tool.
+	Data string
+	// Options carries tool-specific key/value configuration. Each tool
+	// documents the keys it recognises; unknown keys are silently ignored.
 	Options map[string]string
 }
 
 // Result holds the output of a tool invocation.
 type Result struct {
-	Output  string
+	// Output is the human-readable (or machine-parseable) result produced by
+	// the tool. Format is tool-specific and described in each tool's Run doc.
+	Output string
+	// Success is true when the tool completed its primary objective without
+	// error. A false value alongside a nil error indicates a partial result
+	// (e.g. some URLs in a batch failed).
 	Success bool
 }
 
