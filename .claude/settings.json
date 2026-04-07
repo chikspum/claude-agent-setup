@@ -1,80 +1,87 @@
 {
   "permissions": {
     "allow": [
-      "Bash(go build:*)",
-      "Bash(go test:*)",
-      "Bash(go run:*)",
-      "Bash(go vet:*)",
-      "Bash(gofmt:*)",
-      "Bash(goimports:*)",
-      "Bash(python:*)",
-      "Bash(uv:*)",
-      "Bash(pytest:*)",
-      "Bash(ruff:*)",
-      "Bash(cmake:*)",
-      "Bash(make:*)",
-      "Bash(clang-format:*)",
-      "Bash(clang-tidy:*)",
-      "Bash(git status)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
+      "Bash",
       "Read",
       "Write",
       "Edit",
       "Glob",
-      "Grep"
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "Agent",
+      "NotebookEdit"
     ],
     "deny": [
-      "Bash(rm -rf:*)",
-      "Bash(git push --force:*)",
-      "Bash(git reset --hard:*)",
-      "Bash(git checkout -- :*)",
+      "Bash(cat .env)",
+      "Bash(cat .env.*)",
+      "Bash(cat */.env)",
+      "Bash(cat */.env.*)",
+      "Bash(cat *credentials*)",
+      "Bash(cat *secret*)",
+      "Bash(cat *token*)",
+
+      "Bash(head .env*)",
+      "Bash(tail .env*)",
+      "Bash(less .env*)",
+      "Bash(more .env*)",
+
+      "Bash(echo $*TOKEN*)",
+      "Bash(echo $*SECRET*)",
+      "Bash(echo $*KEY*)",
+      "Bash(echo $*PASSWORD*)",
+      "Bash(printenv *TOKEN*)",
+      "Bash(printenv *SECRET*)",
+      "Bash(printenv *KEY*)",
+      "Bash(printenv *PASSWORD*)",
+      "Bash(env | grep -i *token*)",
+      "Bash(env | grep -i *secret*)",
+      "Bash(env | grep -i *key*)",
+      "Bash(env | grep -i *password*)",
+
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf /*)",
       "Bash(sudo:*)",
       "Bash(curl * | bash:*)",
+      "Bash(curl * | sh:*)",
+      "Bash(wget * | bash:*)",
       "Bash(wget * | sh:*)",
-      "Bash(chmod 777:*)",
-      "Bash(kill -9:*)",
-      "Bash(pkill:*)",
       "Bash(dd:*)",
       "Bash(mkfs:*)",
-      "WebFetch",
-      "WebSearch"
+      "Bash(chmod 777:*)",
+
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git reset --hard:*)",
+
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(*credentials*)",
+      "Read(**/credentials*)",
+      "Read(*.pem)",
+      "Read(**/*.pem)",
+      "Read(**/id_rsa*)",
+      "Read(**/.ssh/*)"
     ]
   },
 
-  "agents": {
-    "python-agent": {
-      "extraAllow": [
-        "Bash(pip install:*)",
-        "Bash(uv add:*)"
-      ],
-      "extraDeny": [
-        "Bash(go:*)",
-        "Bash(cmake:*)"
-      ]
-    },
-    "go-agent": {
-      "extraAllow": [
-        "Bash(go get:*)",
-        "Bash(go mod:*)"
-      ],
-      "extraDeny": [
-        "Bash(python:*)",
-        "Bash(cmake:*)"
-      ]
-    },
-    "cpp-agent": {
-      "extraAllow": [
-        "Bash(ninja:*)",
-        "Bash(conan:*)",
-        "Bash(vcpkg:*)"
-      ],
-      "extraDeny": [
-        "Bash(python:*)",
-        "Bash(go:*)"
-      ]
-    }
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hook": "bash -c 'echo \"$CLAUDE_TOOL_INPUT\" | python3 -c \"import sys,json; d=json.load(sys.stdin); p=d.get(\\\"file_path\\\",\\\"\"); exit(1 if any(x in p for x in [\\\".env\\\",\\\"credentials\\\",\\\"secret\\\",\\\".pem\\\",\\\"id_rsa\\\"]) and \\\".example\\\" not in p and \\\".sample\\\" not in p else 0)\"'",
+        "description": "Block writing to secret files (allows .env.example and .env.sample)"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hook": "bash -c 'echo \"$CLAUDE_TOOL_OUTPUT\" | python3 -c \"import sys; text=sys.stdin.read(); markers=[\\\"ghp_\\\",\\\"gho_\\\",\\\"sk-\\\",\\\"AKIA\\\",\\\"-----BEGIN RSA\\\",\\\"-----BEGIN PRIVATE\\\"]; exit(1 if any(m in text for m in markers) else 0)\"'",
+        "description": "Redact output containing leaked tokens or private keys"
+      }
+    ]
   }
 }

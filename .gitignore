@@ -1,0 +1,38 @@
+# Secrets — NEVER commit these
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+credentials.json
+**/secrets/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.ruff_cache/
+dist/
+*.egg-info/
+
+# Go
+/tools/go/bin/
+
+# C++
+build/
+*.o
+*.so
+*.dylib
+*.dll
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

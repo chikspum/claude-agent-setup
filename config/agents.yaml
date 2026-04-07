@@ -13,7 +13,7 @@ orchestrator:
     - cpp-agent
   cannot_modify:
     - "tools/"         # delegates to language agents
-  web_access: false
+  web_access: true
 
 python-agent:
   description: "Python code, data pipelines, ML tooling, scripting"
@@ -25,7 +25,7 @@ python-agent:
     package_manager: "uv"
     test_runner: "pytest"
     linter: "ruff"
-  web_access: false
+  web_access: true
 
 go-agent:
   description: "Go services, CLI tools, high-performance components"
@@ -38,7 +38,7 @@ go-agent:
     runtime: "go1.22"
     test_runner: "go test"
     linter: "golangci-lint"
-  web_access: false
+  web_access: true
 
 cpp-agent:
   description: "Native tools, Python/Go bindings, performance-critical code"
@@ -53,4 +53,4 @@ cpp-agent:
     build_system: "cmake"
     formatter: "clang-format"
     linter: "clang-tidy"
-  web_access: false
+  web_access: true

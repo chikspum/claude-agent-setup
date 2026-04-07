@@ -40,12 +40,28 @@ Permission rules live in `.claude/settings.json`.
 ```
 claude-agent-setup/
 ├── CLAUDE.md                  # This file — read by all agents
+├── Makefile                   # Top-level build/test/lint targets
+├── .gitignore                 # Git ignore rules
+├── .env.example               # Environment variable template
 ├── .claude/
-│   ├── settings.json          # Tool allow/deny rules
+│   ├── settings.json          # Tool allow/deny rules + hooks
 │   └── commands/              # Custom slash commands
-│       ├── build.md
-│       ├── test.md
-│       └── audit.md
+│       ├── build.md           # /build — build all languages
+│       ├── test.md            # /test — run all tests
+│       ├── audit.md           # /audit — permission & security check
+│       ├── review.md          # /review — code review for staged changes
+│       ├── explain.md         # /explain <target> — explain how code works
+│       ├── refactor.md        # /refactor <target> — safe refactoring
+│       ├── security-scan.md   # /security-scan — deep vuln scan
+│       ├── commit.md          # /commit — smart conventional commit helper
+│       ├── pr.md              # /pr — generate and create a pull request
+│       ├── fix.md             # /fix <error> — targeted bug fixer
+│       ├── doc.md             # /doc <target> — generate/update documentation
+│       ├── todo.md            # /todo — find and prioritize TODO/FIXME comments
+│       ├── research.md        # /research <topic> — structured web research
+│       ├── deps.md            # /deps — dependency health check
+│       ├── status.md          # /status — project health dashboard
+│       └── init.md            # /init <lang> <name> — scaffold new component
 ├── agents/
 │   ├── orchestrator.md        # Top-level coordination agent
 │   ├── python-agent.md        # Python-specific agent profile
@@ -92,13 +108,19 @@ Agents operate within their language boundary unless explicitly granted cross-ag
 
 ## Permissions Model
 
-Access is controlled via `.claude/settings.json`.
-See `config/permissions.yaml` for the full documented reference.
+Access uses a **blocklist model**: everything is allowed by default except patterns
+explicitly denied. See `config/permissions.yaml` for the full documented deny list.
 
-**Quick reference:**
-- `allow` — tools/patterns Claude can use without prompting
-- `deny` — tools/patterns always blocked
-- Per-agent overrides are set in `config/agents.yaml`
+**How it works:**
+- `deny` patterns in `.claude/settings.json` block dangerous operations globally (destructive shell commands, secret-leaking writes, etc.)
+- **Hooks** enforce additional runtime safety:
+  - `PreToolUse` — blocks writes to secret files (`.env`, `*.pem`, `*.key`, credentials, etc.)
+  - `PostToolUse` — scans output for leaked tokens or secrets after each tool call
+- WebFetch and WebSearch are **allowed globally** — no per-agent override needed
+
+**Per-agent scoping** is done through each agent's `.md` profile (in `agents/`) and the
+`owns` / `cannot_modify` fields in `config/agents.yaml`, not through `settings.json`
+overrides.
 
 ---
 
@@ -118,6 +140,51 @@ See `config/permissions.yaml` for the full documented reference.
 - Standard: C++17
 - Formatter: `clang-format` (`.clang-format` in root)
 - Build system: CMake, no raw Makefiles in `tools/cpp/`
+
+---
+
+## Behavioral Principles (apply to all agents)
+
+### Think Before Acting
+- Read the target file fully before modifying it. Understand its callers and callees.
+- State your plan before executing: what you will change, why, and what the expected outcome is.
+- Never edit code you have not read. Never guess at a file's structure.
+
+### Verify Your Work
+- After any code change, run the relevant test suite before reporting done.
+- After any refactor, confirm the public API is unchanged (`git diff` should show no signature changes).
+- Before marking a task complete: tests pass, lint passes, `git diff` shows no unintended side effects.
+
+### Cost Awareness
+- Prefer `Grep`/`Glob` over spawning a sub-agent. Prefer local information over web fetches.
+- Only use `WebFetch`/`WebSearch` when local knowledge is genuinely insufficient.
+- Only spawn a sub-agent when the task requires language-specific expertise you lack.
+- Use one targeted search before broadening — stop early when you have enough information.
+
+### Output Quality
+- Cite `file:line` when referencing code. Use tables and code blocks for scan/audit results.
+- Keep explanations proportional to complexity — one sentence for a trivial fix, structured breakdown for a complex system.
+- When reporting findings (research, debug, audit), indicate confidence: **HIGH** (verified), **MEDIUM** (reasoned), **LOW** (uncertain — needs user review).
+
+### Escalation
+Ask the user before:
+- Making a breaking API change (signature, return type, behavior contract)
+- Deleting files or branches
+- Modifying more than 5 files in a single operation
+- Taking any action where your confidence in the correct approach is LOW
+
+Decide autonomously for:
+- Clear bug fixes with an obvious root cause
+- Formatting and lint fixes
+- Documentation updates
+- Adding tests for existing behavior
+
+### Completeness Checks
+Before reporting a task complete, verify all four:
+1. Tests pass (run the appropriate test command)
+2. Lint is clean (ruff / go vet / clang-format --dry-run)
+3. `git diff` shows no unintended modifications
+4. The original problem is actually resolved (re-read the request)
 
 ---
 
