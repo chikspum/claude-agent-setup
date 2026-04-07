@@ -72,7 +72,6 @@ claude-agent-setup/
 │   ├── go/                    # Go tools
 │   └── cpp/                   # C++ tools
 └── config/
-    ├── permissions.yaml       # Human-readable permission reference
     └── agents.yaml            # Agent capability matrix
 ```
 
@@ -109,7 +108,7 @@ Agents operate within their language boundary unless explicitly granted cross-ag
 ## Permissions Model
 
 Access uses a **blocklist model**: everything is allowed by default except patterns
-explicitly denied. See `config/permissions.yaml` for the full documented deny list.
+explicitly denied. See `.claude/settings.json` for the full deny list.
 
 **How it works:**
 - `deny` patterns in `.claude/settings.json` block dangerous operations globally (destructive shell commands, secret-leaking writes, etc.)

@@ -148,7 +148,7 @@ Access uses a **blocklist model** — everything is allowed by default, specific
 
 **Per-agent scoping** is enforced through the `owns` / `cannot_modify` fields in `config/agents.yaml` and the scope rules in each agent's `.md` profile — not through `settings.json` overrides.
 
-See `config/permissions.yaml` for the full documented deny list in human-readable form.
+See `.claude/settings.json` for the full deny list.
 
 ---
 
@@ -221,7 +221,6 @@ claude-agent-setup/
 │
 └── config/
     ├── agents.yaml            # Machine-readable capability matrix (owns, stack, web_access)
-    └── permissions.yaml       # Human-readable deny-list documentation
 ```
 
 ---
@@ -270,5 +269,4 @@ Then add it to the `commands/` tree in `CLAUDE.md` and `DOC.md`.
 
 ### Modify permissions
 Edit `.claude/settings.json` (deny rules) or the hook scripts inline.
-Document the change in `config/permissions.yaml`.
 Run `/audit` after any permission change to verify the model is consistent.
