@@ -114,7 +114,7 @@ All commands live in `.claude/commands/`. Invoke with `/command-name [args]`.
 | Command | What it does |
 |---------|-------------|
 | `/explain <target>` | Explains how a file, function, or module works |
-| `/doc <target>` | Generates or updates inline docs (Google-style / godoc / Doxygen) |
+| `/doc <target>` | Generates or updates inline docs (Google-style / godoc / Doxygen) **and** creates/updates a `DOC.md` agent documentation file for the target directory |
 | `/todo` | Finds and prioritizes all TODO/FIXME/HACK/BUG comments |
 | `/deps` | Dependency health check: outdated versions + CVE scan per language |
 | `/research <topic>` | Structured web research with cost limits and confidence ratings |
