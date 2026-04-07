@@ -1,0 +1,80 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go build:*)",
+      "Bash(go test:*)",
+      "Bash(go run:*)",
+      "Bash(go vet:*)",
+      "Bash(gofmt:*)",
+      "Bash(goimports:*)",
+      "Bash(python:*)",
+      "Bash(uv:*)",
+      "Bash(pytest:*)",
+      "Bash(ruff:*)",
+      "Bash(cmake:*)",
+      "Bash(make:*)",
+      "Bash(clang-format:*)",
+      "Bash(clang-tidy:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git checkout -- :*)",
+      "Bash(sudo:*)",
+      "Bash(curl * | bash:*)",
+      "Bash(wget * | sh:*)",
+      "Bash(chmod 777:*)",
+      "Bash(kill -9:*)",
+      "Bash(pkill:*)",
+      "Bash(dd:*)",
+      "Bash(mkfs:*)",
+      "WebFetch",
+      "WebSearch"
+    ]
+  },
+
+  "agents": {
+    "python-agent": {
+      "extraAllow": [
+        "Bash(pip install:*)",
+        "Bash(uv add:*)"
+      ],
+      "extraDeny": [
+        "Bash(go:*)",
+        "Bash(cmake:*)"
+      ]
+    },
+    "go-agent": {
+      "extraAllow": [
+        "Bash(go get:*)",
+        "Bash(go mod:*)"
+      ],
+      "extraDeny": [
+        "Bash(python:*)",
+        "Bash(cmake:*)"
+      ]
+    },
+    "cpp-agent": {
+      "extraAllow": [
+        "Bash(ninja:*)",
+        "Bash(conan:*)",
+        "Bash(vcpkg:*)"
+      ],
+      "extraDeny": [
+        "Bash(python:*)",
+        "Bash(go:*)"
+      ]
+    }
+  }
+}

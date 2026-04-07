@@ -1,0 +1,97 @@
+# permissions.yaml
+# Human-readable reference for .claude/settings.json rules.
+# Edit settings.json to change actual permissions — this file is documentation only.
+
+# ─────────────────────────────────────────
+# GLOBAL ALLOW  (all agents)
+# ─────────────────────────────────────────
+allow:
+  build:
+    - "Bash(go build:*)"       # compile Go packages
+    - "Bash(go run:*)"         # run Go programs
+    - "Bash(cmake:*)"          # configure C++ builds
+    - "Bash(make:*)"           # run Makefiles
+    - "Bash(uv:*)"             # Python package manager
+
+  test:
+    - "Bash(go test:*)"        # Go tests
+    - "Bash(pytest:*)"         # Python tests
+
+  lint:
+    - "Bash(go vet:*)"         # Go static analysis
+    - "Bash(gofmt:*)"          # Go formatter
+    - "Bash(ruff:*)"           # Python linter/formatter
+    - "Bash(clang-format:*)"   # C++ formatter
+    - "Bash(clang-tidy:*)"     # C++ linter
+
+  vcs:
+    - "Bash(git status)"
+    - "Bash(git diff:*)"
+    - "Bash(git log:*)"
+    - "Bash(git add:*)"
+    - "Bash(git commit:*)"     # commit only — no push without explicit instruction
+
+  files:
+    - "Read"                   # read any file
+    - "Write"                  # write files
+    - "Edit"                   # patch files
+    - "Glob"                   # file pattern search
+    - "Grep"                   # content search
+
+# ─────────────────────────────────────────
+# GLOBAL DENY  (all agents, always blocked)
+# ─────────────────────────────────────────
+deny:
+  destructive:
+    - "Bash(rm -rf:*)"         # recursive delete
+    - "Bash(dd:*)"             # disk write
+    - "Bash(mkfs:*)"           # format filesystem
+
+  git_dangerous:
+    - "Bash(git push --force:*)"     # force push
+    - "Bash(git reset --hard:*)"     # discard commits
+    - "Bash(git checkout -- :*)"     # discard working changes
+
+  privilege:
+    - "Bash(sudo:*)"           # no privilege escalation
+
+  remote_exec:
+    - "Bash(curl * | bash:*)"  # piped remote execution
+    - "Bash(wget * | sh:*)"
+
+  process:
+    - "Bash(kill -9:*)"        # force kill
+    - "Bash(pkill:*)"
+
+  network:
+    - "WebFetch"               # disable web access by default
+    - "WebSearch"              # enable per-agent if needed
+
+# ─────────────────────────────────────────
+# PER-AGENT OVERRIDES
+# ─────────────────────────────────────────
+agents:
+  python-agent:
+    extra_allow:
+      - "Bash(pip install:*)"  # install packages
+      - "Bash(uv add:*)"       # add uv dependencies
+    extra_deny:
+      - "Bash(go:*)"           # locked to Python scope
+      - "Bash(cmake:*)"
+
+  go-agent:
+    extra_allow:
+      - "Bash(go get:*)"       # add Go dependencies
+      - "Bash(go mod:*)"       # module management
+    extra_deny:
+      - "Bash(python:*)"
+      - "Bash(cmake:*)"
+
+  cpp-agent:
+    extra_allow:
+      - "Bash(ninja:*)"        # alternative build system
+      - "Bash(conan:*)"        # C++ package manager
+      - "Bash(vcpkg:*)"        # Microsoft C++ package manager
+    extra_deny:
+      - "Bash(python:*)"
+      - "Bash(go:*)"

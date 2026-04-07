@@ -1,0 +1,56 @@
+# agents.yaml
+# Capability matrix — what each agent is allowed to do and own.
+
+orchestrator:
+  description: "Coordinates sub-agents, breaks down tasks, tracks progress"
+  owns:
+    - "agents/"
+    - "config/"
+    - "CLAUDE.md"
+  can_spawn:
+    - python-agent
+    - go-agent
+    - cpp-agent
+  cannot_modify:
+    - "tools/"         # delegates to language agents
+  web_access: false
+
+python-agent:
+  description: "Python code, data pipelines, ML tooling, scripting"
+  owns:
+    - "tools/python/"
+    - "**/*.py"
+  stack:
+    runtime: "python3.11"
+    package_manager: "uv"
+    test_runner: "pytest"
+    linter: "ruff"
+  web_access: false
+
+go-agent:
+  description: "Go services, CLI tools, high-performance components"
+  owns:
+    - "tools/go/"
+    - "**/*.go"
+    - "**/go.mod"
+    - "**/go.sum"
+  stack:
+    runtime: "go1.22"
+    test_runner: "go test"
+    linter: "golangci-lint"
+  web_access: false
+
+cpp-agent:
+  description: "Native tools, Python/Go bindings, performance-critical code"
+  owns:
+    - "tools/cpp/"
+    - "**/*.cpp"
+    - "**/*.h"
+    - "**/*.hpp"
+    - "**/CMakeLists.txt"
+  stack:
+    standard: "c++17"
+    build_system: "cmake"
+    formatter: "clang-format"
+    linter: "clang-tidy"
+  web_access: false
