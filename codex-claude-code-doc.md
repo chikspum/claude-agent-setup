@@ -88,6 +88,9 @@ command_surface:
     build: bash scripts/build.sh
     test: bash scripts/test.sh
     lint: bash scripts/lint.sh
+    handoff_bridge:
+      - bash scripts/run_claude_handoff.sh docs/plans/active/<plan-file>.md
+      - make handoff PLAN=docs/plans/active/<plan-file>.md
     strict_verify:
       - make doctor
       - make policy-check

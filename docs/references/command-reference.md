@@ -27,6 +27,8 @@ Codex may instruct Claude Code to use them, but Codex does not execute them as n
 - `bash scripts/build.sh`
 - `bash scripts/test.sh`
 - `bash scripts/lint.sh`
+- `bash scripts/run_claude_handoff.sh docs/plans/active/<plan-file>.md`
+- `make handoff PLAN=docs/plans/active/<plan-file>.md`
 - `git status --short`
 - `git diff --stat`
 - `git diff`

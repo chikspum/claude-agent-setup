@@ -61,6 +61,7 @@ Start here when root agent files point you into deeper material.
 - `make policy-check`: validation-artifact and docs-drift enforcement
 - `make metrics-check`: machine-summary drift detection
 - `make verify`: full strict verification gate
+- `make handoff PLAN=...`: run Claude Code against a repository plan through the bridge runner
 
 ## Hybrid Commands
 

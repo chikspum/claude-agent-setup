@@ -1,4 +1,4 @@
-.PHONY: all build test lint doctor policy-check metrics-check verify clean
+.PHONY: all build test lint doctor policy-check metrics-check verify handoff clean
 
 STRICT ?= 1
 
@@ -24,6 +24,10 @@ metrics-check:
 	python3 scripts/generate_metrics_summary.py --check
 
 verify: doctor policy-check metrics-check build test lint
+
+handoff:
+	@if [ -z "$(PLAN)" ]; then echo "PLAN is required, e.g. make handoff PLAN=docs/plans/active/example.md"; exit 1; fi
+	bash scripts/run_claude_handoff.sh "$(PLAN)"
 
 clean:
 	rm -rf tools/cpp/build

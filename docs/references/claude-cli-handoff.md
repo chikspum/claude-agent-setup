@@ -14,6 +14,13 @@ claude -p --permission-mode acceptEdits --add-dir /home/ubuntu/claude-agent-setu
 EOF
 ```
 
+Repository bridge entrypoints:
+
+```bash
+bash scripts/run_claude_handoff.sh docs/plans/active/<plan-file>.md
+make handoff PLAN=docs/plans/active/<plan-file>.md
+```
+
 ## Why This Pattern
 
 - `stdin` is more reliable than passing a large multi-line prompt as a positional argument
@@ -49,6 +56,15 @@ A good handoff brief should include:
 - required final response format
 
 Use [claude-brief-template.md](/home/ubuntu/claude-agent-setup/docs/references/claude-brief-template.md) as the base.
+
+## Bridge Behavior
+
+The repository bridge:
+
+- reads the plan file
+- derives a bounded Claude brief from the plan metadata, scope, work items, and validation strategy
+- invokes `claude -p` with `--add-dir /home/ubuntu/claude-agent-setup`
+- prints a normalized runner header before Claude output so Codex can review the result consistently
 
 ## Validation Rule
 
