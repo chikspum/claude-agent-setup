@@ -9,6 +9,7 @@ Use this file to orient quickly, then move into `docs/` for durable detail.
 - [AGENTS.md](/home/ubuntu/claude-agent-setup/AGENTS.md): short read-order map for Codex and Claude Code
 - [CODEX.md](/home/ubuntu/claude-agent-setup/CODEX.md): Codex operating model
 - [CLAUDE.md](/home/ubuntu/claude-agent-setup/CLAUDE.md): Claude Code operating model
+- [codex-claude-code-doc.md](/home/ubuntu/claude-agent-setup/codex-claude-code-doc.md): machine-readable hybrid operating model
 - [docs/index.md](/home/ubuntu/claude-agent-setup/docs/index.md): detailed repository docs index
 
 ## What Lives Where

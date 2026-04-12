@@ -4,6 +4,10 @@ This directory is the system of record for detailed, durable workflow guidance.
 
 Start here when root agent files point you into deeper material.
 
+## Root Machine-Readable Doc
+
+- [../codex-claude-code-doc.md](/home/ubuntu/claude-agent-setup/codex-claude-code-doc.md)
+
 ## Architecture
 
 - [architecture/index.md](/home/ubuntu/claude-agent-setup/docs/architecture/index.md)
