@@ -94,6 +94,7 @@ command_surface:
     delegate_runner:
       - python3 scripts/delegate_to_claude.py --goal "..." --change "path: exact change"
       - make delegate GOAL="..."
+      - python3 scripts/delegate_to_claude.py --goal "..." --write-run-log-draft
     strict_verify:
       - make doctor
       - make policy-check

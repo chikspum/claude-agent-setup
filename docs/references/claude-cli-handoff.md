@@ -20,6 +20,7 @@ Repository bridge entrypoints:
 bash scripts/run_claude_handoff.sh docs/plans/active/<plan-file>.md
 make handoff PLAN=docs/plans/active/<plan-file>.md
 python3 scripts/delegate_to_claude.py --goal "..." --change "path: exact change"
+python3 scripts/delegate_to_claude.py --goal "..." --write-run-log-draft
 ```
 
 ## Why This Pattern
@@ -72,6 +73,8 @@ The delegate runner adds one higher layer:
 - accepts a direct Codex goal plus optional scope flags
 - generates a temporary bounded plan
 - routes that plan through the same Claude bridge
+- prints suggested run-log and validation-artifact paths before execution
+- can write a draft run log automatically when `--write-run-log-draft` is used
 
 ## Validation Rule
 

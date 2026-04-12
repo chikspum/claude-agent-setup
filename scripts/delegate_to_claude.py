@@ -141,7 +141,87 @@ def write_plan(plan_text: str, explicit_path: str | None, task_id: str) -> Path:
         return Path(handle.name).resolve()
 
 
-def run_bridge(plan_path: Path, permission_mode: str, claude_bin: str) -> int:
+def suggest_artifact_paths(task_id: str) -> tuple[Path, Path, str]:
+    date = datetime.now(timezone.utc).date().isoformat()
+    run_id = f"{date}-{task_id}-run-01"
+    run_log = ROOT / "artifacts" / "runs" / f"{run_id}.md"
+    validation = ROOT / "artifacts" / "validations" / f"{date}-{task_id}.md"
+    return run_log, validation, run_id
+
+
+def write_run_log_draft(
+    *,
+    run_log_path: Path,
+    run_id: str,
+    task_id: str,
+    plan_path: Path,
+    goal: str,
+    required_changes: list[str],
+    permission_mode: str,
+    claude_command: list[str],
+    claude_stdout: str,
+    claude_stderr: str,
+    exit_code: int,
+) -> None:
+    run_log_path.parent.mkdir(parents=True, exist_ok=True)
+    status = "completed" if exit_code == 0 else "partial"
+    summary = "Claude delegation completed; Codex still needs to validate scope and checks."
+    if exit_code != 0:
+        summary = "Claude delegation exited non-zero; inspect stdout/stderr before accepting any result."
+
+    files_touched = required_changes or ["determine from git diff during Codex validation"]
+    stderr_note = claude_stderr.strip().splitlines()[-1] if claude_stderr.strip() else "none"
+
+    content = "\n".join(
+        [
+            "# Run Log",
+            "",
+            "## Metadata",
+            "",
+            f"- run_id: {run_id}",
+            f"- date: {datetime.now(timezone.utc).date().isoformat()}",
+            "- operator: Claude Code",
+            f"- task_id: {task_id}",
+            f"- plan_file: {plan_path}",
+            "",
+            "## Intent",
+            "",
+            f"- goal: {goal}",
+            f"- scope: {', '.join(files_touched)}",
+            "",
+            "## Commands Run",
+            "",
+            "| Command | Result | Notes |",
+            "|---------|--------|-------|",
+            f"| `{' '.join(claude_command)}` | {'PASS' if exit_code == 0 else 'FAIL'} | permission mode `{permission_mode}` |",
+            "",
+            "## Files Touched",
+            "",
+            *[f"- {item}" for item in files_touched],
+            "",
+            "## Outcome",
+            "",
+            f"- status: {status}",
+            f"- summary: {summary}",
+            "- follow_up_needed: validate git diff, checks run, and whether suggested artifact paths should be kept",
+            "",
+            "## Environment Notes",
+            "",
+            "- missing_tools: determine during Codex validation",
+            "- degraded_paths_used: determine during Codex validation",
+            f"- unexpected_failures: {stderr_note}",
+            "",
+            "## Claude Output",
+            "",
+            "```text",
+            claude_stdout.strip() or "(no stdout captured)",
+            "```",
+        ]
+    ) + "\n"
+    run_log_path.write_text(content, encoding="utf-8")
+
+
+def run_bridge(plan_path: Path, permission_mode: str, claude_bin: str) -> subprocess.CompletedProcess[str]:
     command = [
         "python3",
         str(ROOT / "scripts" / "run_claude_from_plan.py"),
@@ -151,8 +231,17 @@ def run_bridge(plan_path: Path, permission_mode: str, claude_bin: str) -> int:
         "--claude-bin",
         claude_bin,
     ]
-    completed = subprocess.run(command, cwd=ROOT, check=False)
-    return completed.returncode
+    completed = subprocess.run(command, cwd=ROOT, check=False, capture_output=True, text=True)
+    if completed.stdout:
+        sys.stdout.write(completed.stdout)
+        if not completed.stdout.endswith("\n"):
+            sys.stdout.write("\n")
+    if completed.stderr:
+        sys.stderr.write(completed.stderr)
+        if not completed.stderr.endswith("\n"):
+            sys.stderr.write("\n")
+    sys.stdout.flush()
+    return completed
 
 
 def main() -> int:
@@ -181,6 +270,11 @@ def main() -> int:
     parser.add_argument("--print-plan", action="store_true", help="Print the generated plan and exit.")
     parser.add_argument("--print-brief", action="store_true", help="Print the generated Claude brief and exit.")
     parser.add_argument("--plan-only", action="store_true", help="Write the plan and print its path without invoking Claude.")
+    parser.add_argument(
+        "--write-run-log-draft",
+        action="store_true",
+        help="Write a draft run log under artifacts/runs/ after Claude execution.",
+    )
     args = parser.parse_args()
 
     task_id = args.task_id or slugify(args.goal)
@@ -201,10 +295,13 @@ def main() -> int:
         return 0
 
     plan_path = write_plan(plan_text, args.plan_file, task_id)
+    run_log_path, validation_path, run_id = suggest_artifact_paths(task_id)
     sys.stdout.write("## Delegate Runner\n")
     sys.stdout.write(f"- task_id: {task_id}\n")
     sys.stdout.write(f"- plan: {plan_path}\n")
     sys.stdout.write(f"- permission_mode: {args.permission_mode}\n")
+    sys.stdout.write(f"- suggested_run_log: {run_log_path}\n")
+    sys.stdout.write(f"- suggested_validation_artifact: {validation_path}\n")
     sys.stdout.flush()
 
     if args.plan_only:
@@ -222,7 +319,33 @@ def main() -> int:
 
     sys.stdout.write("- action: invoking Claude bridge\n\n")
     sys.stdout.flush()
-    return run_bridge(plan_path, args.permission_mode, args.claude_bin)
+    completed = run_bridge(plan_path, args.permission_mode, args.claude_bin)
+
+    if args.write_run_log_draft:
+        write_run_log_draft(
+            run_log_path=run_log_path,
+            run_id=run_id,
+            task_id=task_id,
+            plan_path=plan_path,
+            goal=args.goal,
+            required_changes=args.change,
+            permission_mode=args.permission_mode,
+            claude_command=[
+                args.claude_bin,
+                "-p",
+                "--permission-mode",
+                args.permission_mode,
+                "--add-dir",
+                str(ROOT),
+            ],
+            claude_stdout=completed.stdout,
+            claude_stderr=completed.stderr,
+            exit_code=completed.returncode,
+        )
+        sys.stdout.write(f"\n## Delegate Runner Artifacts\n- draft_run_log: {run_log_path}\n")
+        sys.stdout.flush()
+
+    return completed.returncode
 
 
 if __name__ == "__main__":
