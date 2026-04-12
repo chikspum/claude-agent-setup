@@ -31,7 +31,7 @@ handoff:
 
 delegate:
 	@if [ -z "$(GOAL)" ]; then echo "GOAL is required, e.g. make delegate GOAL='update docs'"; exit 1; fi
-	python3 scripts/delegate_to_claude.py --goal "$(GOAL)" $(if $(RUN_LOG_DRAFT),--write-run-log-draft,)
+	python3 scripts/delegate_to_claude.py --goal "$(GOAL)" $(if $(RUN_LOG_DRAFT),--write-run-log-draft,) $(if $(VALIDATION_DRAFT),--write-validation-draft,)
 
 clean:
 	rm -rf tools/cpp/build

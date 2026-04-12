@@ -221,6 +221,83 @@ def write_run_log_draft(
     run_log_path.write_text(content, encoding="utf-8")
 
 
+def write_validation_draft(
+    *,
+    validation_path: Path,
+    task_id: str,
+    plan_path: Path,
+    goal: str,
+    required_changes: list[str],
+    claude_stdout: str,
+) -> None:
+    validation_path.parent.mkdir(parents=True, exist_ok=True)
+    changed_files = required_changes or ["determine from git diff during Codex validation"]
+    summary = "Claude output captured; Codex validation still required."
+    for line in claude_stdout.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("## "):
+            continue
+        if stripped.startswith("- "):
+            continue
+        if stripped.startswith("```"):
+            continue
+        summary = stripped
+        break
+
+    content = "\n".join(
+        [
+            "# Validation Artifact",
+            "",
+            "## Task",
+            "",
+            f"- task_id: {task_id}",
+            f"- date: {datetime.now(timezone.utc).date().isoformat()}",
+            "- codex_operator: Codex",
+            f"- claude_run_summary: {summary}",
+            "",
+            "## Plan Reference",
+            "",
+            f"- plan_file: {plan_path}",
+            f"- scope_summary: {goal}",
+            "",
+            "## Changed Files",
+            "",
+            *[f"- {item}" for item in changed_files],
+            "",
+            "## Checks Run",
+            "",
+            "| Command | Result | Notes |",
+            "|---------|--------|-------|",
+            "| `Codex validation pending` | SKIPPED | draft created automatically by delegate runner |",
+            "",
+            "## Skipped Checks",
+            "",
+            "- command: task-specific validation",
+            "  reason: delegate runner created a draft; Codex still needs to inspect diff and run checks",
+            "",
+            "## Scope Review",
+            "",
+            "- in_scope_files_confirmed: pending Codex review",
+            "- unrelated_files_detected: pending Codex review",
+            "- public_interface_changes: pending Codex review",
+            "",
+            "## Documentation Review",
+            "",
+            "- docs_reread: pending Codex review",
+            "- overclaiming_found: pending Codex review",
+            "",
+            "## Acceptance Decision",
+            "",
+            "- decision: PARTIAL",
+            "- rationale: draft artifact created automatically after Claude delegation; Codex validation not yet completed",
+            "- follow_up_required: inspect git diff, run relevant checks, and replace pending fields with final review results",
+        ]
+    ) + "\n"
+    validation_path.write_text(content, encoding="utf-8")
+
+
 def run_bridge(plan_path: Path, permission_mode: str, claude_bin: str) -> subprocess.CompletedProcess[str]:
     command = [
         "python3",
@@ -274,6 +351,11 @@ def main() -> int:
         "--write-run-log-draft",
         action="store_true",
         help="Write a draft run log under artifacts/runs/ after Claude execution.",
+    )
+    parser.add_argument(
+        "--write-validation-draft",
+        action="store_true",
+        help="Write a draft validation artifact under artifacts/validations/ after Claude execution.",
     )
     args = parser.parse_args()
 
@@ -343,6 +425,18 @@ def main() -> int:
             exit_code=completed.returncode,
         )
         sys.stdout.write(f"\n## Delegate Runner Artifacts\n- draft_run_log: {run_log_path}\n")
+        sys.stdout.flush()
+
+    if args.write_validation_draft:
+        write_validation_draft(
+            validation_path=validation_path,
+            task_id=task_id,
+            plan_path=plan_path,
+            goal=args.goal,
+            required_changes=args.change,
+            claude_stdout=completed.stdout,
+        )
+        sys.stdout.write(f"\n## Delegate Runner Artifacts\n- draft_validation_artifact: {validation_path}\n")
         sys.stdout.flush()
 
     return completed.returncode
