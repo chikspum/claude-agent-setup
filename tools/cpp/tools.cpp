@@ -1,13 +1,12 @@
 #include "tools.h"
+
 #include <cstring>
 
 namespace agent_tools {
 
-Result echo(std::string_view input) {
-    return Result{std::string(input), true, ""};
-}
+Result echo(std::string_view input) { return Result{std::string(input), true, ""}; }
 
-} // namespace agent_tools
+}  // namespace agent_tools
 
 extern "C" {
 
@@ -19,4 +18,4 @@ int echo_ffi(const char* input, char* output, int output_len) {
     return static_cast<int>(result.output.size());
 }
 
-} // extern "C"
+}  // extern "C"

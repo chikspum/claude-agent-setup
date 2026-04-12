@@ -1,8 +1,7 @@
 """Tests for tools/python/pagination_tool.py."""
 
-from skills import SkillInput
 from pagination_tool import get_next_page_url, get_prev_page_url
-
+from skills import SkillInput
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
 

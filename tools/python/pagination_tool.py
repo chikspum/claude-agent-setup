@@ -30,8 +30,14 @@ _PREV_TEXTS = re.compile(
 )
 
 # CSS class / id fragments that hint at next/prev controls.
-_NEXT_CLASS = re.compile(r"(^|\b)(next|page-?next|pagination-?next|nav-?next)(\b|$)", re.IGNORECASE)
-_PREV_CLASS = re.compile(r"(^|\b)(prev(ious)?|page-?prev|pagination-?prev|nav-?prev)(\b|$)", re.IGNORECASE)
+_NEXT_CLASS = re.compile(
+    r"(^|\b)(next|page-?next|pagination-?next|nav-?next)(\b|$)",
+    re.IGNORECASE,
+)
+_PREV_CLASS = re.compile(
+    r"(^|\b)(prev(ious)?|page-?prev|pagination-?prev|nav-?prev)(\b|$)",
+    re.IGNORECASE,
+)
 
 # aria-label patterns
 _NEXT_ARIA = re.compile(r"next(\s*page)?", re.IGNORECASE)
