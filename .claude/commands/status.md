@@ -16,38 +16,17 @@ git rev-list --count --left-right @{upstream}...HEAD 2>/dev/null || echo "no ups
 
 ### 2. Build status
 ```bash
-# Python — syntax check (no build step needed)
-python -m py_compile tools/python/skills.py 2>&1 | head -5 || echo "PASS"
-
-# Go
-cd tools/go && go build ./... 2>&1 | head -10
-
-# C++
-cd tools/cpp && cmake -B build -DCMAKE_BUILD_TYPE=Release 2>&1 | tail -3 && cmake --build build 2>&1 | tail -5
+bash scripts/build.sh
 ```
 
 ### 3. Tests
 ```bash
-# Python
-cd tools/python && uv run pytest --tb=no -q 2>&1 | tail -5
-
-# Go
-cd tools/go && go test ./... 2>&1 | tail -5
-
-# C++
-cd tools/cpp && ctest --test-dir build --output-on-failure 2>&1 | tail -5
+bash scripts/test.sh
 ```
 
 ### 4. Lint
 ```bash
-# Python
-cd tools/python && ruff check . 2>&1 | tail -5
-
-# Go
-cd tools/go && go vet ./... 2>&1 | tail -5
-
-# C++
-find tools/cpp -name '*.cpp' -o -name '*.h' | xargs clang-format --dry-run --Werror 2>&1 | head -10
+bash scripts/lint.sh
 ```
 
 ### 5. Open issues
@@ -69,25 +48,26 @@ grep -rn 'TODO\|FIXME\|HACK\|BUG' tools/ --include='*.py' --include='*.go' --inc
 | Ahead/behind   | ↑2 ↓0 vs origin/main           |
 
 ### Build
-| Language | Status |
-|----------|--------|
-| Python   | PASS   |
-| Go       | PASS   |
-| C++      | FAIL   |
+| Surface                  | Status |
+|--------------------------|--------|
+| `bash scripts/build.sh`  | PASS / FAIL / PASS (degraded mode) |
 
 ### Tests
-| Language | Passed | Failed | Skipped |
-|----------|--------|--------|---------|
-| Python   | 12     | 0      | 1       |
-| Go       | 8      | 0      | 0       |
-| C++      | 5      | 2      | 0       |
+| Surface                 | Status |
+|-------------------------|--------|
+| `bash scripts/test.sh`  | PASS / FAIL / PASS (degraded mode) |
 
 ### Lint
-| Language | Status         |
-|----------|----------------|
-| Python   | PASS           |
-| Go       | PASS           |
-| C++      | 3 issues       |
+| Surface                 | Status |
+|-------------------------|--------|
+| `bash scripts/lint.sh`  | PASS / FAIL / PASS (degraded mode) |
+
+### Environment Gaps
+| Tool | Effect |
+|------|--------|
+| `uv` | Python build uses fallback checks |
+| `cmake` / `ctest` | C++ build and tests use fallback compiler flow |
+| `ruff` / `clang-format` | lint uses fallback checks |
 
 ### Open Issues
 | Type  | Count |
@@ -105,4 +85,5 @@ grep -rn 'TODO\|FIXME\|HACK\|BUG' tools/ --include='*.py' --include='*.go' --inc
 
 - Run ALL steps even if build fails — a failing build does not mean tests or lint checks should be skipped
 - If a language has no source files yet, skip it and note "no source files"
-- If a tool is not installed, skip that check and note it
+- If a tool is not installed, record the missing tool and whether the repo scripts fell back or had to skip work entirely
+- Distinguish `PASS` from `PASS (degraded mode)` whenever fallback validation was used

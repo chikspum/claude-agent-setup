@@ -1,0 +1,76 @@
+# validation.yaml
+# Machine-readable validation policy for the hybrid Codex -> Claude workflow.
+
+version: 1
+
+global_checks:
+  git:
+    - "git status --short"
+    - "git diff --stat"
+    - "git diff"
+  acceptance_requirements:
+    - "changed files are in scope"
+    - "required checks are run or explicitly skipped"
+    - "missing tools are reported explicitly"
+    - "Codex records an acceptance decision"
+
+validation_artifacts:
+  directory: "artifacts/validations/"
+  required_fields:
+    - task_id
+    - plan_file
+    - claude_scope_summary
+    - changed_files
+    - checks_run
+    - skipped_checks
+    - acceptance_decision
+
+profiles:
+  docs_only:
+    required:
+      - "git status --short"
+      - "git diff --stat"
+      - "git diff"
+      - "manual doc reread"
+    optional:
+      - "language-specific tests if behavior changed indirectly"
+
+  python:
+    required:
+      - "git status --short"
+      - "git diff --stat"
+      - "git diff"
+      - "cd tools/python && pytest -v"
+    optional:
+      - "cd tools/python && ruff check ."
+      - "cd tools/python && ruff format --check ."
+
+  go:
+    required:
+      - "git status --short"
+      - "git diff --stat"
+      - "git diff"
+      - "cd tools/go && go test ./... -v"
+    optional:
+      - "cd tools/go && go vet ./..."
+      - "cd tools/go && gofmt -l ."
+
+  cpp:
+    required:
+      - "git status --short"
+      - "git diff --stat"
+      - "git diff"
+      - "cd tools/cpp && cmake -B build -DCMAKE_BUILD_TYPE=Release"
+      - "cd tools/cpp && cmake --build build --parallel"
+      - "cd tools/cpp && ctest --test-dir build --output-on-failure"
+    optional:
+      - "cd tools/cpp && clang-format --dry-run -Werror *.cpp *.h"
+
+  mixed:
+    required:
+      - "git status --short"
+      - "git diff --stat"
+      - "git diff"
+      - "run all required checks for each touched area"
+    optional:
+      - "run top-level make build/test/lint when environment supports it"

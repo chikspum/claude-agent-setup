@@ -1,0 +1,29 @@
+{
+  "schema_version": "metrics_summary/v1",
+  "generated_at": "2026-04-12",
+  "production_defaults": {
+    "target": "internal_team",
+    "operating_mode": "codex_orchestrates_claude",
+    "claude_edit_permission_mode": "acceptEdits",
+    "restriction_enforcement": "runtime_plus_policy"
+  },
+  "artifact_counts": {
+    "completed_plans": 5,
+    "run_logs": 5,
+    "validation_artifacts": 5,
+    "environment_blocked_runs": 3
+  },
+  "release_gate": {
+    "docs_and_command_surface_aligned": true,
+    "runtime_profile_guidance_present": true,
+    "restriction_policy_present": true,
+    "delegated_docs_task_verified": true,
+    "delegated_code_task_verified": true,
+    "machine_readable_summary_present": true,
+    "production_prep_completed": true
+  },
+  "verified_examples": {
+    "docs_only_task": "2026-04-09-claude-handoff-smoke",
+    "code_edit_task": "2026-04-09-python-reverse-skill"
+  }
+}
