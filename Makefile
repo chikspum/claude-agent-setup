@@ -1,4 +1,4 @@
-.PHONY: all build test lint doctor policy-check metrics-check verify handoff clean
+.PHONY: all build test lint doctor policy-check metrics-check verify handoff delegate clean
 
 STRICT ?= 1
 
@@ -28,6 +28,10 @@ verify: doctor policy-check metrics-check build test lint
 handoff:
 	@if [ -z "$(PLAN)" ]; then echo "PLAN is required, e.g. make handoff PLAN=docs/plans/active/example.md"; exit 1; fi
 	bash scripts/run_claude_handoff.sh "$(PLAN)"
+
+delegate:
+	@if [ -z "$(GOAL)" ]; then echo "GOAL is required, e.g. make delegate GOAL='update docs'"; exit 1; fi
+	python3 scripts/delegate_to_claude.py --goal "$(GOAL)"
 
 clean:
 	rm -rf tools/cpp/build

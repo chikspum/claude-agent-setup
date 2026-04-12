@@ -18,6 +18,7 @@ Start here when root agent files point you into deeper material.
 
 - [workflows/hybrid-execution.md](/home/ubuntu/claude-agent-setup/docs/workflows/hybrid-execution.md)
 - [workflows/validation.md](/home/ubuntu/claude-agent-setup/docs/workflows/validation.md)
+- [workflows/observability.md](/home/ubuntu/claude-agent-setup/docs/workflows/observability.md)
 - [workflows/pr-flow.md](/home/ubuntu/claude-agent-setup/docs/workflows/pr-flow.md)
 - [workflows/incident-debugging.md](/home/ubuntu/claude-agent-setup/docs/workflows/incident-debugging.md)
 
@@ -31,6 +32,7 @@ Start here when root agent files point you into deeper material.
 - [plans/completed/2026-04-09-claude-handoff-smoke.md](/home/ubuntu/claude-agent-setup/docs/plans/completed/2026-04-09-claude-handoff-smoke.md)
 - [plans/completed/2026-04-09-python-reverse-skill.md](/home/ubuntu/claude-agent-setup/docs/plans/completed/2026-04-09-python-reverse-skill.md)
 - [plans/completed/phase-5-6-rollout.md](/home/ubuntu/claude-agent-setup/docs/plans/completed/phase-5-6-rollout.md)
+- [plans/completed/2026-04-12-production-prep.md](/home/ubuntu/claude-agent-setup/docs/plans/completed/2026-04-12-production-prep.md)
 
 ## Quality
 
@@ -62,6 +64,7 @@ Start here when root agent files point you into deeper material.
 - `make metrics-check`: machine-summary drift detection
 - `make verify`: full strict verification gate
 - `make handoff PLAN=...`: run Claude Code against a repository plan through the bridge runner
+- `make delegate GOAL=...`: let Codex create a temporary bounded plan and delegate it to Claude
 
 ## Hybrid Commands
 

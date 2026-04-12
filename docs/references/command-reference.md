@@ -28,7 +28,9 @@ Codex may instruct Claude Code to use them, but Codex does not execute them as n
 - `bash scripts/test.sh`
 - `bash scripts/lint.sh`
 - `bash scripts/run_claude_handoff.sh docs/plans/active/<plan-file>.md`
+- `python3 scripts/delegate_to_claude.py --goal "..." --change "path: exact change"`
 - `make handoff PLAN=docs/plans/active/<plan-file>.md`
+- `make delegate GOAL="..."`
 - `git status --short`
 - `git diff --stat`
 - `git diff`

@@ -19,6 +19,7 @@ Repository bridge entrypoints:
 ```bash
 bash scripts/run_claude_handoff.sh docs/plans/active/<plan-file>.md
 make handoff PLAN=docs/plans/active/<plan-file>.md
+python3 scripts/delegate_to_claude.py --goal "..." --change "path: exact change"
 ```
 
 ## Why This Pattern
@@ -65,6 +66,12 @@ The repository bridge:
 - derives a bounded Claude brief from the plan metadata, scope, work items, and validation strategy
 - invokes `claude -p` with `--add-dir /home/ubuntu/claude-agent-setup`
 - prints a normalized runner header before Claude output so Codex can review the result consistently
+
+The delegate runner adds one higher layer:
+
+- accepts a direct Codex goal plus optional scope flags
+- generates a temporary bounded plan
+- routes that plan through the same Claude bridge
 
 ## Validation Rule
 

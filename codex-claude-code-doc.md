@@ -91,6 +91,9 @@ command_surface:
     handoff_bridge:
       - bash scripts/run_claude_handoff.sh docs/plans/active/<plan-file>.md
       - make handoff PLAN=docs/plans/active/<plan-file>.md
+    delegate_runner:
+      - python3 scripts/delegate_to_claude.py --goal "..." --change "path: exact change"
+      - make delegate GOAL="..."
     strict_verify:
       - make doctor
       - make policy-check
