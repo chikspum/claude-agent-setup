@@ -1,4 +1,4 @@
-.PHONY: all build test lint metrics-check clean
+.PHONY: all build test lint doctor policy-check metrics-check verify clean
 
 STRICT ?= 1
 
@@ -13,8 +13,17 @@ test:
 lint:
 	STRICT=$(STRICT) bash scripts/lint.sh
 
+doctor:
+	STRICT=$(STRICT) bash scripts/check_toolchain.sh
+
+policy-check:
+	python3 scripts/check_artifacts.py
+	python3 scripts/check_docs_drift.py
+
 metrics-check:
 	python3 scripts/generate_metrics_summary.py --check
+
+verify: doctor policy-check metrics-check build test lint
 
 clean:
 	rm -rf tools/cpp/build

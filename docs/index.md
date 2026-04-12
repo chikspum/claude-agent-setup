@@ -51,6 +51,13 @@ Start here when root agent files point you into deeper material.
 - [references/restrictions.md](/home/ubuntu/claude-agent-setup/docs/references/restrictions.md)
 - [references/production-gate.md](/home/ubuntu/claude-agent-setup/docs/references/production-gate.md)
 
+## Automation
+
+- `make doctor`: strict toolchain presence and minimum versions
+- `make policy-check`: validation-artifact and docs-drift enforcement
+- `make metrics-check`: machine-summary drift detection
+- `make verify`: full strict verification gate
+
 ## Hybrid Commands
 
 Project-level Claude commands live in `.claude/commands/`.

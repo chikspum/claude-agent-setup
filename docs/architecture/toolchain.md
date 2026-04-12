@@ -15,6 +15,9 @@ Strict wrapper, if `make` is installed:
 - `make build`
 - `make test`
 - `make lint`
+- `make doctor`
+- `make policy-check`
+- `make verify`
 
 Language-specific:
 
@@ -30,10 +33,21 @@ Language-specific:
 - if a tool is missing in the environment, report it explicitly in validation artifacts
 - build/test/lint commands are part of the product surface for agent workflows, not optional maintenance trivia
 
-## Current Gaps
+## Strict Toolchain
 
-Known gaps observed on 2026-04-07 in this workspace:
+Strict verification expects these primary tools:
 
-- `make` is missing, so direct `make` entrypoints are not portable as the only documented surface
-- `uv`, `ruff`, `cmake`, `ctest`, and `clang-format` may be absent in local environments
-- repo-local scripts now provide explicit degraded-mode output, but full validation still depends on the primary tools above
+- `python3 >= 3.11`
+- `uv >= 0.4`
+- `go >= 1.22`
+- `g++`
+- `cmake >= 3.22`
+- `ctest >= 3.22`
+- `clang-format >= 14`
+
+Use `make doctor` to verify the toolchain and `make verify` for the full strict gate.
+
+## Degraded Mode
+
+Repo-local scripts still provide degraded-mode fallbacks for local agent work when strict tooling is unavailable.
+Production acceptance should use `make verify`, not degraded-mode output.

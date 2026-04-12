@@ -39,4 +39,6 @@ Codex may instruct Claude Code to use them, but Codex does not execute them as n
 - machine-readable policy: [config/validation.yaml](/home/ubuntu/claude-agent-setup/config/validation.yaml)
 - artifact template: [artifacts/validations/TEMPLATE.md](/home/ubuntu/claude-agent-setup/artifacts/validations/TEMPLATE.md)
 - machine-readable summary: [artifacts/metrics/summary.json](/home/ubuntu/claude-agent-setup/artifacts/metrics/summary.json)
+- artifact structure check: `python3 scripts/check_artifacts.py`
+- docs and policy drift check: `python3 scripts/check_docs_drift.py`
 - summary check: `python3 scripts/generate_metrics_summary.py --check`

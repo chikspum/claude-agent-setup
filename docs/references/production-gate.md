@@ -22,5 +22,8 @@ A repository state should not be treated as production-ready unless the release 
 
 ## Verification
 
+- verify the strict toolchain with `make doctor`
+- run policy automation with `make policy-check`
 - regenerate the machine summary with `python3 scripts/generate_metrics_summary.py`
 - check for drift with `python3 scripts/generate_metrics_summary.py --check` or `make metrics-check`
+- run the full strict gate with `make verify`

@@ -19,11 +19,12 @@ validation_artifacts:
   required_fields:
     - task_id
     - plan_file
-    - claude_scope_summary
-    - changed_files
-    - checks_run
-    - skipped_checks
-    - acceptance_decision
+    - claude_run_summary
+    - scope_summary
+    - changed_files_section
+    - checks_run_section
+    - skipped_checks_section
+    - acceptance_decision_section
 
 profiles:
   docs_only:

@@ -6,7 +6,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 section "Python build"
 if require_tool uv "required for dependency sync in tools/python"; then
-  run_shell "uv sync" "$ROOT_DIR/tools/python" "uv sync"
+  run_shell "uv sync --extra dev" "$ROOT_DIR/tools/python" "uv sync --extra dev"
 else
   run_shell "python syntax smoke check" "$ROOT_DIR/tools/python" "python3 -m py_compile skills.py test_skills.py"
 fi

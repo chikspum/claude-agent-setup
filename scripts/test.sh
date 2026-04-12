@@ -5,7 +5,9 @@ set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 section "Python tests"
-if require_tool pytest "required for tools/python tests"; then
+if command -v uv >/dev/null 2>&1; then
+  run_shell "uv run --extra dev pytest -q" "$ROOT_DIR/tools/python" "uv run --extra dev pytest -q"
+elif require_tool pytest "required for tools/python tests when uv is unavailable"; then
   run_shell "pytest -q" "$ROOT_DIR/tools/python" "pytest -q"
 fi
 

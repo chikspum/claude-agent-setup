@@ -5,7 +5,10 @@ set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 section "Python lint"
-if require_tool ruff "preferred Python lint and format checker"; then
+if command -v uv >/dev/null 2>&1; then
+  run_shell "uv run --extra dev ruff check ." "$ROOT_DIR/tools/python" "uv run --extra dev ruff check ."
+  run_shell "uv run --extra dev ruff format --check ." "$ROOT_DIR/tools/python" "uv run --extra dev ruff format --check ."
+elif require_tool ruff "preferred Python lint and format checker"; then
   run_shell "ruff check ." "$ROOT_DIR/tools/python" "ruff check ."
   run_shell "ruff format --check ." "$ROOT_DIR/tools/python" "ruff format --check ."
 else
