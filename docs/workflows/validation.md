@@ -30,6 +30,15 @@ For automated policy gates, also use `make doctor`, `make policy-check`, `make m
 - any degraded fallback path is reported explicitly
 - docs do not overclaim behavior the code does not implement
 
+For abnormal Claude edit runs, Codex should also classify the bridge result explicitly:
+
+- `success`: clean Claude completion
+- `partial_success`: meaningful in-scope progress exists, even if the run ended by timeout or another abnormal exit
+- `failure`: no useful scoped progress, or the repo was left in an unsafe or out-of-scope state
+
+Treat `partial_success` as a recovery state, not as silent acceptance.
+Use it to drive either direct Codex validation or a narrow follow-up handoff.
+
 ## Artifact Pattern
 
 For non-trivial tasks, keep a validation note with:

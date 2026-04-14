@@ -72,6 +72,17 @@ The repository bridge:
 - invokes `claude -p` with `--output-format json`, `--no-session-persistence`, and `--add-dir /home/ubuntu/claude-agent-setup`
 - prints a normalized runner header before Claude output so Codex can review the result consistently
 - enforces a runtime timeout so edit-capable Claude runs fail cleanly instead of hanging indefinitely
+- classifies bridge outcomes explicitly as `success`, `partial_success`, or `failure`
+- writes a debug artifact under `artifacts/debug/claude-bridge/` for timed-out or otherwise abnormal edit runs
+
+## Outcome Semantics
+
+- `success`: Claude returned a clean final response and the bridge finished normally
+- `partial_success`: Claude did not finish cleanly, but meaningful in-scope repository progress exists and the result is either already acceptable or salvageable via a narrow follow-up
+- `failure`: Claude made no useful progress, or the observed changes are out-of-scope or clearly unsafe
+
+`partial_success` is not automatic acceptance.
+It means the orchestrator found real bounded progress and preserved enough evidence for Codex to validate or recover the task with a narrower follow-up.
 
 The delegate runner adds one higher layer:
 
