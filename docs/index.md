@@ -7,6 +7,7 @@ Start here when root agent files point you into deeper material.
 ## Root Machine-Readable Doc
 
 - [../codex-claude-code-doc.md](/home/ubuntu/claude-agent-setup/codex-claude-code-doc.md)
+- [../doc.md](/home/ubuntu/claude-agent-setup/doc.md)
 
 ## Architecture
 
