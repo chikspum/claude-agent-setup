@@ -26,6 +26,13 @@ Codex may perform trivial direct work when delegation is clearly slower than the
 8. Codex reruns tests, lint, and build checks as needed.
 9. Codex accepts, patches minor defects, or sends a narrower follow-up brief.
 
+For oversized work, the bridge should not default to one broad edit-capable pass.
+The stable pattern is:
+
+1. run a compact read-only micro-probe when architecture or file layout still needs confirmation
+2. run narrow edit slices instead of one broad mixed runtime/tests/docs/package handoff
+3. if Claude only creates an in-scope directory or package path, classify that as recoverable partial progress and immediately re-slice
+
 ## Handoff Contract
 
 Every Claude execution brief should contain:
