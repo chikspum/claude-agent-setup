@@ -233,6 +233,19 @@ def allowed_scope_paths(required_changes: list[str]) -> set[str]:
     return allowed
 
 
+def is_path_in_scope(path: str, allowed: set[str]) -> bool:
+    if not allowed:
+        return True
+    normalized = path.strip("/")
+    for scope_path in allowed:
+        scope_normalized = scope_path.strip("/")
+        if normalized == scope_normalized:
+            return True
+        if normalized.startswith(f"{scope_normalized}/"):
+            return True
+    return False
+
+
 def capture_repo_snapshot(root: Path) -> dict[str, FileState]:
     snapshot: dict[str, FileState] = {}
     for path in root.rglob("*"):
@@ -352,8 +365,8 @@ def inspect_abnormal_run(
     after_snapshot = capture_repo_snapshot(ROOT)
     changed_files = detect_changed_files(before_snapshot, after_snapshot)
     allowed = allowed_scope_paths(required_changes)
-    in_scope_files = [path for path in changed_files if not allowed or path in allowed]
-    out_of_scope_files = [path for path in changed_files if allowed and path not in allowed]
+    in_scope_files = [path for path in changed_files if is_path_in_scope(path, allowed)]
+    out_of_scope_files = [path for path in changed_files if not is_path_in_scope(path, allowed)]
     diff_stats = git_diff_stats(changed_files)
     meaningful_diff = is_meaningful_change(changed_files, diff_stats)
 
@@ -624,8 +637,8 @@ def run_claude(
     success_inspection = BridgeInspection(
         outcome="success",
         changed_files=changed_files,
-        in_scope_files=[path for path in changed_files if not allowed or path in allowed],
-        out_of_scope_files=[path for path in changed_files if allowed and path not in allowed],
+        in_scope_files=[path for path in changed_files if is_path_in_scope(path, allowed)],
+        out_of_scope_files=[path for path in changed_files if not is_path_in_scope(path, allowed)],
         meaningful_diff=is_meaningful_change(changed_files, diff_stats),
         repo_broken=False,
         summary="Claude returned a clean final response.",

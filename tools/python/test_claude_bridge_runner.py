@@ -129,6 +129,30 @@ def test_timeout_with_out_of_scope_diff_is_failure(monkeypatch, tmp_path):
     assert inspection.out_of_scope_files == ["unexpected.py"]
 
 
+def test_directory_scope_treats_descendants_as_in_scope(monkeypatch, tmp_path):
+    configure_temp_root(monkeypatch, tmp_path)
+    before_snapshot = bridge.capture_repo_snapshot(tmp_path)
+    package_dir = tmp_path / "pkg"
+    package_dir.mkdir()
+    (package_dir / "module.py").write_text("print('ok')\n", encoding="utf-8")
+
+    inspection = bridge.inspect_abnormal_run(
+        task_id="directory-scope",
+        required_changes=["pkg: create the package and files within it"],
+        validation_commands=["python3 -c 'print(1)'"],
+        before_snapshot=before_snapshot,
+        stdout="partial stdout",
+        stderr="timeout",
+        timeout_seconds=5,
+        process_exit_code=None,
+        timed_out=True,
+    )
+
+    assert inspection.outcome == "partial_success"
+    assert "pkg/module.py" in inspection.in_scope_files
+    assert inspection.out_of_scope_files == []
+
+
 def test_delegate_runner_recognizes_partial_success_outcome():
     stdout = "\n".join(
         [
