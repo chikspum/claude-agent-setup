@@ -20,6 +20,7 @@ Use this file to track hybrid-agent workflow quality over time.
 | 2026-04-09 | 3 | 3 | 3 | 3 | first real Codex -> Claude handoff completed after a blocked permission-mode probe |
 | 2026-04-09 | 4 | 4 | 4 | 3 | first delegated code-edit task completed and locally verified with pytest |
 | 2026-04-12 | 5 | 5 | 5 | 3 | production operating mode, runtime-policy split, and machine-readable metrics summary added |
+| 2026-04-12 | 5 | 6 | 6 | 3 | observability rules doc added; accepted docs-only Claude delegation recorded and validated |
 
 ## Logging Rule
 

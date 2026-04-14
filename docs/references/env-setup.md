@@ -14,6 +14,11 @@ Environment notes for productive hybrid-agent execution.
 - `ruff`
 - `clang-format`
 
+## Verification Commands
+
+- `make doctor` — verifies the toolchain (checks that required tools are present and at the expected versions)
+- `make verify` — strict full gate; runs all checks and must pass before a change is considered shippable
+
 ## Policy
 
 - if a required tool is missing, record that as an environment issue
