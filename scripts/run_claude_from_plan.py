@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import subprocess
 import sys
@@ -10,6 +11,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_TIMEOUT_SECONDS = 120
 
 
 def extract_section(text: str, heading: str) -> list[str]:
@@ -155,16 +157,48 @@ def build_brief(plan_path: Path) -> tuple[str, str]:
     return task_id, brief
 
 
-def run_claude(plan_path: Path, permission_mode: str, claude_bin: str) -> int:
+def render_claude_output(stdout: str, output_format: str) -> str:
+    if output_format != "json":
+        return stdout
+
+    stripped = stdout.strip()
+    if not stripped:
+        return ""
+
+    try:
+        payload = json.loads(stripped)
+    except json.JSONDecodeError:
+        return stdout
+
+    if isinstance(payload, dict):
+        result = payload.get("result")
+        if isinstance(result, str) and result.strip():
+            return result.rstrip() + "\n"
+
+    return stdout
+
+
+def run_claude(
+    plan_path: Path,
+    permission_mode: str,
+    claude_bin: str,
+    timeout_seconds: int,
+    output_format: str,
+    no_session_persistence: bool,
+) -> int:
     task_id, brief = build_brief(plan_path)
     command = [
         claude_bin,
         "-p",
+        "--output-format",
+        output_format,
         "--permission-mode",
         permission_mode,
         "--add-dir",
         str(ROOT),
     ]
+    if no_session_persistence:
+        command.append("--no-session-persistence")
 
     try:
         completed = subprocess.run(
@@ -174,6 +208,7 @@ def run_claude(plan_path: Path, permission_mode: str, claude_bin: str) -> int:
             cwd=ROOT,
             capture_output=True,
             check=False,
+            timeout=timeout_seconds,
         )
     except FileNotFoundError:
         sys.stderr.write(
@@ -181,16 +216,45 @@ def run_claude(plan_path: Path, permission_mode: str, claude_bin: str) -> int:
             "Install Claude Code CLI or pass --claude-bin with the correct executable path.\n"
         )
         return 127
+    except subprocess.TimeoutExpired as exc:
+        sys.stdout.write("## Handoff Runner\n")
+        sys.stdout.write(f"- plan: {plan_path}\n")
+        sys.stdout.write(f"- task_id: {task_id}\n")
+        sys.stdout.write(f"- permission_mode: {permission_mode}\n")
+        sys.stdout.write(f"- command: {' '.join(command)}\n")
+        sys.stdout.write(f"- timeout_seconds: {timeout_seconds}\n\n")
+
+        partial_stdout = exc.stdout or ""
+        partial_stderr = exc.stderr or ""
+        rendered = render_claude_output(partial_stdout, output_format)
+        if rendered:
+            sys.stdout.write(rendered)
+            if not rendered.endswith("\n"):
+                sys.stdout.write("\n")
+
+        if partial_stderr:
+            sys.stderr.write(partial_stderr)
+            if not partial_stderr.endswith("\n"):
+                sys.stderr.write("\n")
+
+        sys.stderr.write(
+            "claude bridge timed out before Claude returned a final response; "
+            "inspect git diff for partial edits and retry with a narrower scope or a higher timeout.\n"
+        )
+        return 124
 
     sys.stdout.write("## Handoff Runner\n")
     sys.stdout.write(f"- plan: {plan_path}\n")
     sys.stdout.write(f"- task_id: {task_id}\n")
     sys.stdout.write(f"- permission_mode: {permission_mode}\n")
+    sys.stdout.write(f"- timeout_seconds: {timeout_seconds}\n")
     sys.stdout.write(f"- command: {' '.join(command)}\n\n")
 
-    if completed.stdout:
-        sys.stdout.write(completed.stdout)
-        if not completed.stdout.endswith("\n"):
+    rendered_stdout = render_claude_output(completed.stdout, output_format)
+
+    if rendered_stdout:
+        sys.stdout.write(rendered_stdout)
+        if not rendered_stdout.endswith("\n"):
             sys.stdout.write("\n")
 
     if completed.stderr:
@@ -215,6 +279,24 @@ def main() -> int:
         help="Claude CLI executable. Defaults to 'claude'.",
     )
     parser.add_argument(
+        "--timeout-seconds",
+        type=int,
+        default=DEFAULT_TIMEOUT_SECONDS,
+        help=f"Maximum Claude runtime before the bridge fails cleanly. Defaults to {DEFAULT_TIMEOUT_SECONDS}.",
+    )
+    parser.add_argument(
+        "--output-format",
+        choices=["text", "json"],
+        default="json",
+        help="Claude print output format. Defaults to json for machine-readable bridge output.",
+    )
+    parser.add_argument(
+        "--session-persistence",
+        choices=["enabled", "disabled"],
+        default="disabled",
+        help="Whether Claude session persistence should stay enabled for bridge runs. Defaults to disabled.",
+    )
+    parser.add_argument(
         "--print-brief",
         action="store_true",
         help="Print the generated brief instead of running Claude.",
@@ -235,7 +317,14 @@ def main() -> int:
         sys.stdout.write(brief)
         return 0
 
-    return run_claude(plan_path, args.permission_mode, args.claude_bin)
+    return run_claude(
+        plan_path,
+        args.permission_mode,
+        args.claude_bin,
+        args.timeout_seconds,
+        args.output_format,
+        args.session_persistence == "disabled",
+    )
 
 
 if __name__ == "__main__":

@@ -5,11 +5,12 @@ Practical note for running real Codex -> Claude handoffs in this repository.
 ## Recommended Invocation
 
 Prefer `claude -p` with the prompt provided on `stdin`.
+For bridge automation, prefer machine-readable output and disabled session persistence.
 
 Example shape:
 
 ```bash
-claude -p --permission-mode acceptEdits --add-dir /home/ubuntu/claude-agent-setup <<'EOF'
+claude -p --output-format json --no-session-persistence --permission-mode acceptEdits --add-dir /home/ubuntu/claude-agent-setup <<'EOF'
 <bounded handoff brief>
 EOF
 ```
@@ -27,6 +28,8 @@ python3 scripts/delegate_to_claude.py --goal "..." --write-run-log-draft --write
 ## Why This Pattern
 
 - `stdin` is more reliable than passing a large multi-line prompt as a positional argument
+- `--output-format json` gives Codex a stable machine-readable result channel when Claude exits cleanly
+- `--no-session-persistence` avoids bridge runs lingering on session bookkeeping after the actual work is done
 - `--add-dir` keeps the repository path explicit
 - `--permission-mode acceptEdits` works for bounded edit tasks without forcing the fully permissive modes
 - the brief stays easy to archive into plans, run logs, and validation artifacts
@@ -66,8 +69,9 @@ The repository bridge:
 
 - reads the plan file
 - derives a bounded Claude brief from the plan metadata, scope, work items, and validation strategy
-- invokes `claude -p` with `--add-dir /home/ubuntu/claude-agent-setup`
+- invokes `claude -p` with `--output-format json`, `--no-session-persistence`, and `--add-dir /home/ubuntu/claude-agent-setup`
 - prints a normalized runner header before Claude output so Codex can review the result consistently
+- enforces a runtime timeout so edit-capable Claude runs fail cleanly instead of hanging indefinitely
 
 The delegate runner adds one higher layer:
 

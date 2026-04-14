@@ -29,6 +29,7 @@ Codex may instruct Claude Code to use them, but Codex does not execute them as n
 - `bash scripts/lint.sh`
 - `bash scripts/run_claude_handoff.sh docs/plans/active/<plan-file>.md`
 - `python3 scripts/delegate_to_claude.py --goal "..." --change "path: exact change"`
+- `python3 scripts/run_claude_from_plan.py docs/plans/active/<plan-file>.md --timeout-seconds 120`
 - `python3 scripts/delegate_to_claude.py --goal "..." --write-run-log-draft`
 - `python3 scripts/delegate_to_claude.py --goal "..." --write-validation-draft`
 - `make handoff PLAN=docs/plans/active/<plan-file>.md`

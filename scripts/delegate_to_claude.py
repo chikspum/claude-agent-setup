@@ -298,13 +298,20 @@ def write_validation_draft(
     validation_path.write_text(content, encoding="utf-8")
 
 
-def run_bridge(plan_path: Path, permission_mode: str, claude_bin: str) -> subprocess.CompletedProcess[str]:
+def run_bridge(
+    plan_path: Path,
+    permission_mode: str,
+    claude_bin: str,
+    timeout_seconds: int,
+) -> subprocess.CompletedProcess[str]:
     command = [
         "python3",
         str(ROOT / "scripts" / "run_claude_from_plan.py"),
         str(plan_path),
         "--permission-mode",
         permission_mode,
+        "--timeout-seconds",
+        str(timeout_seconds),
         "--claude-bin",
         claude_bin,
     ]
@@ -342,6 +349,12 @@ def main() -> int:
         "--permission-mode",
         default="acceptEdits",
         help="Claude permission mode for the delegated run. Defaults to acceptEdits.",
+    )
+    parser.add_argument(
+        "--timeout-seconds",
+        type=int,
+        default=120,
+        help="Maximum Claude runtime before the bridge fails cleanly. Defaults to 120.",
     )
     parser.add_argument("--claude-bin", default="claude", help="Claude CLI executable.")
     parser.add_argument("--print-plan", action="store_true", help="Print the generated plan and exit.")
@@ -401,7 +414,7 @@ def main() -> int:
 
     sys.stdout.write("- action: invoking Claude bridge\n\n")
     sys.stdout.flush()
-    completed = run_bridge(plan_path, args.permission_mode, args.claude_bin)
+    completed = run_bridge(plan_path, args.permission_mode, args.claude_bin, args.timeout_seconds)
 
     if args.write_run_log_draft:
         write_run_log_draft(
