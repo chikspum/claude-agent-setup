@@ -63,4 +63,5 @@ Validation policy remains defined by [config/validation.yaml](/home/ubuntu/claud
 - do not blur the runtime boundary between Codex and Claude Code
 - do not present Claude claims without local verification
 - do not let root docs become a second system of record
+- do not run `git commit` or `git push` unless the user explicitly asks for it in the current conversation
 - if tooling is missing, report the gap explicitly in the plan or validation artifact

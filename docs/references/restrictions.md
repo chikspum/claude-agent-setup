@@ -19,6 +19,12 @@ These are the minimum restrictions that should appear in any production launcher
 - `git reset --hard`
 - `ssh`
 
+## Codex VCS Gate
+
+- `git commit` requires an explicit user request in the current conversation
+- `git push` requires an explicit user request in the current conversation
+- if changes are ready but no request was given, stop at local diff, validation, or staging summary
+
 ## Current Claude Runtime Enforcement
 
 The checked-in Claude runtime profile is stricter than the baseline policy above.
