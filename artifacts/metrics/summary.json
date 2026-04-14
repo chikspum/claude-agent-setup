@@ -20,8 +20,7 @@
     "delegated_docs_task_verified": true,
     "delegated_code_task_verified": true,
     "machine_readable_summary_present": true,
-    "production_prep_completed": true,
-    "observability_rules_documented": true
+    "production_prep_completed": true
   },
   "verified_examples": {
     "docs_only_task": "2026-04-09-claude-handoff-smoke",
