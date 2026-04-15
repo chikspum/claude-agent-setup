@@ -456,9 +456,7 @@ def test_delegate_render_plan_prefixes_verify_items_with_cmd():
     )
 
     assert "- cmd: python3 -m py_compile scripts/run_claude_from_plan.py" in plan_text
-    assert (
-        "- cmd: python3 -m pytest -q tools/python/test_claude_bridge_runner.py" in plan_text
-    )
+    assert "- cmd: python3 -m pytest -q tools/python/test_claude_bridge_runner.py" in plan_text
 
 
 def test_delegate_render_plan_no_verify_uses_prose_fallback():
@@ -670,9 +668,7 @@ def test_check_docs_overclaim_flags_docs_only_changes():
 
 
 def test_check_docs_overclaim_does_not_flag_mixed_docs_and_runtime():
-    warnings = bridge.check_docs_overclaim(
-        ["docs/design.md", "scripts/run_claude_from_plan.py"]
-    )
+    warnings = bridge.check_docs_overclaim(["docs/design.md", "scripts/run_claude_from_plan.py"])
     assert warnings == []
 
 

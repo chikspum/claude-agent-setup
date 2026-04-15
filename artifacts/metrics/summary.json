@@ -1,6 +1,6 @@
 {
   "schema_version": "metrics_summary/v1",
-  "generated_at": "2026-04-14",
+  "generated_at": "2026-04-15",
   "production_defaults": {
     "target": "internal_team",
     "operating_mode": "codex_orchestrates_claude",
