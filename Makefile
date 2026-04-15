@@ -1,44 +1,38 @@
-.PHONY: all build test lint clean
+.PHONY: all build test lint doctor policy-check metrics-check verify handoff delegate clean
+
+STRICT ?= 1
 
 all: build test lint
 
-# ── Build ────────────────────────────────────────
-build: build-python build-go build-cpp
+build:
+	STRICT=$(STRICT) bash scripts/build.sh
 
-build-python:
-	cd tools/python && uv sync
+test:
+	STRICT=$(STRICT) bash scripts/test.sh
 
-build-go:
-	cd tools/go && go build ./...
+lint:
+	STRICT=$(STRICT) bash scripts/lint.sh
 
-build-cpp:
-	cd tools/cpp && cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel
+doctor:
+	STRICT=$(STRICT) bash scripts/check_toolchain.sh
 
-# ── Test ─────────────────────────────────────────
-test: test-python test-go test-cpp
+policy-check:
+	python3 scripts/check_artifacts.py
+	python3 scripts/check_docs_drift.py
 
-test-python:
-	cd tools/python && pytest -v
+metrics-check:
+	python3 scripts/generate_metrics_summary.py --check
 
-test-go:
-	cd tools/go && go test ./... -v
+verify: doctor policy-check metrics-check build test lint
 
-test-cpp:
-	cd tools/cpp/build && ctest --output-on-failure
+handoff:
+	@if [ -z "$(PLAN)" ]; then echo "PLAN is required, e.g. make handoff PLAN=docs/plans/active/example.md"; exit 1; fi
+	bash scripts/run_claude_handoff.sh "$(PLAN)"
 
-# ── Lint ─────────────────────────────────────────
-lint: lint-python lint-go lint-cpp
+delegate:
+	@if [ -z "$(GOAL)" ]; then echo "GOAL is required, e.g. make delegate GOAL='update docs'"; exit 1; fi
+	python3 scripts/delegate_to_claude.py --goal "$(GOAL)" $(if $(RUN_LOG_DRAFT),--write-run-log-draft,) $(if $(VALIDATION_DRAFT),--write-validation-draft,)
 
-lint-python:
-	cd tools/python && ruff check . && ruff format --check .
-
-lint-go:
-	cd tools/go && go vet ./... && gofmt -l .
-
-lint-cpp:
-	cd tools/cpp && clang-format --dry-run -Werror *.cpp *.h 2>/dev/null || true
-
-# ── Clean ────────────────────────────────────────
 clean:
 	rm -rf tools/cpp/build
 	cd tools/go && go clean

@@ -50,6 +50,7 @@
       "Bash(dd:*)",
       "Bash(mkfs:*)",
       "Bash(chmod 777:*)",
+      "Bash(ssh:*)",
 
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
@@ -61,8 +62,12 @@
       "Read(**/.env.*)",
       "Read(*credentials*)",
       "Read(**/credentials*)",
+      "Read(secrets/*)",
+      "Read(**/secrets/*)",
       "Read(*.pem)",
       "Read(**/*.pem)",
+      "Read(*.key)",
+      "Read(**/*.key)",
       "Read(**/id_rsa*)",
       "Read(**/.ssh/*)"
     ]

@@ -24,4 +24,6 @@ def echo(input: SkillInput) -> SkillOutput:
     return SkillOutput(result=input.data, success=True)
 
 
-# TODO: add your skills here
+def reverse(input: SkillInput) -> SkillOutput:
+    """Return the input data with characters reversed."""
+    return SkillOutput(result=input.data[::-1], success=True)

@@ -1,6 +1,6 @@
 #pragma once
-#include <string_view>
 #include <string>
+#include <string_view>
 
 // C++ tool interface.
 // Add new tools following this pattern.
@@ -20,9 +20,9 @@ Result echo(std::string_view input);
 
 // TODO: add your tools here
 
-} // namespace agent_tools
+}  // namespace agent_tools
 
 // FFI interface — callable from Python (ctypes) and Go (cgo)
 extern "C" {
-    int echo_ffi(const char* input, char* output, int output_len);
+int echo_ffi(const char* input, char* output, int output_len);
 }

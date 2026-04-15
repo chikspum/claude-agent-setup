@@ -1,13 +1,25 @@
 # /test
 
-Run all tests across all languages. Report results as a summary table.
+Run the repository test surface through the repo-local script first, then break out language detail if needed.
 
 Steps:
-1. Python: `cd tools/python && pytest -v`
-2. Go: `cd tools/go && go test ./... -v`
-3. C++: `cd tools/cpp/build && ctest --output-on-failure`
+1. Prefer the repo-local entrypoint: `bash scripts/test.sh`
+2. If you need language-specific detail, map the outcome back to:
+   - `cd tools/python && pytest -v`
+   - `cd tools/go && go test ./... -v`
+   - `cd tools/cpp && ctest --test-dir build --output-on-failure`
+3. Report `PASS (degraded mode)` when the repo script succeeds via fallback checks instead of full primary-tool validation.
+4. If any tests fail, list the failing test names or failing command blocks and the error output.
+5. If the run is tied to a tracked task, mention the plan path and any run-log or validation-artifact path Codex should update.
 
-Run all three even if one fails. At the end, print:
+At the end, print:
+
+## Context
+- <plan path or n/a>
+- <run log path or n/a>
+
+## Repo Command
+- `bash scripts/test.sh`: PASS / FAIL / PASS (degraded mode)
 
 | Language | Tests | Passed | Failed |
 |----------|-------|--------|--------|
@@ -15,4 +27,4 @@ Run all three even if one fails. At the end, print:
 | Go       | ...   | ...    | ...    |
 | C++      | ...   | ...    | ...    |
 
-If any tests failed, list the failing test names and their error output.
+Also state any missing tools that prevented full validation.
