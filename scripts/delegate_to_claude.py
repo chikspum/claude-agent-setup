@@ -55,11 +55,16 @@ def render_plan(
     scope_lines.append("- dependencies or tools that may be missing locally:")
     scope_lines.append("  - report any missing tool instead of silently skipping it")
 
-    validation_lines = verification or [
-        "run the smallest relevant repo-local checks for the touched area",
-        "report skipped checks and why",
-        "state whether files stayed in scope",
-    ]
+    if verification:
+        validation_lines = [
+            v if v.startswith("cmd:") else f"cmd: {v}" for v in verification
+        ]
+    else:
+        validation_lines = [
+            "run the smallest relevant repo-local checks for the touched area",
+            "report skipped checks and why",
+            "state whether files stayed in scope",
+        ]
 
     claude_lines = (
         claude_work_items

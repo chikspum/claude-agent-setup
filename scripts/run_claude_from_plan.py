@@ -22,11 +22,12 @@ RunOutcome = Literal["success", "partial_success", "failure"]
 MaterializationState = Literal[
     "no_progress",
     "path_created_only",
-    "file_materialized",
+    "materialized_but_unvalidated",
     "validated_partial",
     "validated_success",
 ]
 ExecutionMode = Literal["single_edit", "sliced_edit", "micro_probe"]
+RunKind = Literal["clean_exit", "execution_failure", "timeout", "early_abort"]
 
 
 @dataclass
@@ -59,6 +60,11 @@ class BridgeInspection:
     recommended_next_slice: str | None = None
     orchestration_mode: ExecutionMode = "single_edit"
     orchestration_reason: str = ""
+    run_outcome: RunKind = "clean_exit"
+    acceptance_outcome: RunOutcome = "success"
+    failure_kind: str = ""
+    retry_eligible: bool = False
+    docs_overclaim_warnings: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -272,6 +278,23 @@ def build_brief(plan_path: Path, permission_mode: str) -> tuple[str, str, Orches
     return task_id, brief, guidance
 
 
+def parse_validation_commands(lines: list[str]) -> list[str]:
+    """Extract executable commands from ``- cmd: <command>`` lines.
+
+    Only lines with the explicit ``cmd:`` prefix are treated as runnable
+    commands.  Prose items (reporting rules, notes) are intentionally
+    excluded so they are never passed to a subprocess.
+    """
+    commands: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("- cmd:"):
+            cmd = stripped[len("- cmd:"):].strip()
+            if cmd:
+                commands.append(cmd)
+    return commands
+
+
 def extract_plan_scope(plan_path: Path) -> tuple[str, list[str], list[str], list[str]]:
     text = plan_path.read_text(encoding="utf-8")
     metadata = extract_section(text, "Metadata")
@@ -280,8 +303,8 @@ def extract_plan_scope(plan_path: Path) -> tuple[str, list[str], list[str], list
     task_id = extract_metadata_value(metadata, "task_id") or plan_path.stem
     required_changes = extract_scoped_list(scope, "files expected to change")
     forbidden_changes = extract_scoped_list(scope, "files that must not change")
-    validation_items = extract_bullets(validation)
-    return task_id, required_changes, forbidden_changes, validation_items
+    validation_commands = parse_validation_commands(validation)
+    return task_id, required_changes, forbidden_changes, validation_commands
 
 
 def is_edit_mode(permission_mode: str) -> bool:
@@ -307,6 +330,17 @@ def build_slice_plan(problem: str, required_changes: list[str], work_items: list
             "implement runtime + navigator + browser helpers only",
             "add tests + pyproject integration only",
             "polish docs, guarantees, and limitations only",
+        ]
+    # Detect package bootstrap tasks: any required change with a /** glob pattern
+    has_package_bootstrap = any(
+        "/**" in item or item.split(":")[0].strip().endswith("/**")
+        for item in required_changes
+    )
+    if has_package_bootstrap:
+        return [
+            "create package skeleton and __init__.py exports only",
+            "implement the smallest core runtime or model slice only",
+            "add or update focused tests and minimal integration only",
         ]
     return [
         "implement the smallest core runtime or model slice only",
@@ -520,7 +554,7 @@ def classify_materialization_state(
         if all(check.result == "PASS" for check in validation_checks):
             return "validated_success"
         return "validated_partial"
-    return "file_materialized"
+    return "materialized_but_unvalidated"
 
 
 def early_abort_threshold_seconds(timeout_seconds: int) -> int:
@@ -542,6 +576,34 @@ def should_early_abort(
     if out_of_scope_files:
         return False
     return elapsed_seconds >= early_abort_threshold_seconds(timeout_seconds)
+
+
+def classify_run_kind(
+    timed_out: bool,
+    early_abort: bool,
+    process_exit_code: int | None,
+) -> RunKind:
+    """Classify how the Claude process ended, independent of output quality."""
+    if early_abort:
+        return "early_abort"
+    if timed_out:
+        return "timeout"
+    if process_exit_code is not None and process_exit_code != 0:
+        return "execution_failure"
+    return "clean_exit"
+
+
+def is_retry_eligible(
+    run_kind: RunKind,
+    materialization_state: MaterializationState,
+) -> bool:
+    """True if the run can be retried at most once.
+
+    Only execution failures with no progress are eligible — this avoids
+    retrying timeouts (which signal complexity), logical/task failures,
+    or partial runs where a targeted follow-up slice is more appropriate.
+    """
+    return run_kind == "execution_failure" and materialization_state == "no_progress"
 
 
 def suggest_follow_up_actions(
@@ -587,9 +649,28 @@ def suggest_follow_up_actions(
     return deduped[:4]
 
 
+def check_docs_overclaim(changed_files: list[str]) -> list[str]:
+    """Conservative docs-vs-code consistency check.
+
+    Flags only the obvious case: docs files were modified while no runtime
+    code files changed at all.  Keeps the check conservative and testable —
+    does not attempt semantic analysis of doc content.
+    """
+    if not changed_files:
+        return []
+    layer_set = {classify_change_layer(p) for p in changed_files}
+    if "docs" not in layer_set or "runtime" in layer_set:
+        return []
+    doc_files = [p for p in changed_files if classify_change_layer(p) == "docs"]
+    listed = ", ".join(doc_files[:3])
+    suffix = f" (and {len(doc_files) - 3} more)" if len(doc_files) > 3 else ""
+    return [f"docs changed without runtime support: {listed}{suffix}"]
+
+
 def inspect_abnormal_run(
     *,
     task_id: str,
+    plan_path: str | None = None,
     required_changes: list[str],
     validation_commands: list[str],
     before_snapshot: dict[str, FileState],
@@ -600,6 +681,8 @@ def inspect_abnormal_run(
     timed_out: bool,
     early_abort_triggered: bool = False,
     guidance: OrchestrationGuidance | None = None,
+    elapsed_seconds: float = 0.0,
+    is_retry_attempt: bool = False,
 ) -> BridgeInspection:
     after_snapshot = capture_repo_snapshot(ROOT)
     changed_files = detect_changed_files(before_snapshot, after_snapshot)
@@ -609,9 +692,17 @@ def inspect_abnormal_run(
         selected_work_items=[],
     )
     scope_policy = build_scope_policy(required_changes)
-    in_scope_files = [path for path in changed_files if is_path_in_scope(path, scope_policy)]
+    # Directories created implicitly as parents of in-scope files must not trigger scope
+    # violations.  Only file entries participate in scope enforcement.
+    file_changed = [
+        path for path in changed_files
+        if not (
+            (s := after_snapshot.get(path)) is not None and s.exists and not s.is_file
+        )
+    ]
+    in_scope_files = [path for path in file_changed if is_path_in_scope(path, scope_policy)]
     out_of_scope_files = [
-        path for path in changed_files if not is_path_in_scope(path, scope_policy)
+        path for path in file_changed if not is_path_in_scope(path, scope_policy)
     ]
     diff_stats = git_diff_stats(changed_files)
     meaningful_diff = is_meaningful_change(changed_files, diff_stats)
@@ -624,13 +715,18 @@ def inspect_abnormal_run(
     materialization_state = classify_materialization_state(
         changed_files, after_snapshot, validation_checks
     )
+    docs_overclaim_warnings = check_docs_overclaim(changed_files)
+
+    run_kind = classify_run_kind(timed_out, early_abort_triggered, process_exit_code)
 
     follow_up_actions: list[str] = []
     follow_up_recommended = False
     recommended_next_slice = guidance.recommended_next_slice
+    failure_kind = ""
 
     if materialization_state == "no_progress" or not meaningful_diff:
         outcome: RunOutcome = "failure"
+        failure_kind = run_kind
         summary = "No meaningful repository diff was produced before the abnormal Claude exit."
     elif materialization_state == "path_created_only" and not out_of_scope_files:
         outcome = "partial_success"
@@ -647,6 +743,7 @@ def inspect_abnormal_run(
         )
     elif out_of_scope_files:
         outcome = "failure"
+        failure_kind = "out_of_scope"
         repo_broken = True
         summary = (
             "Claude produced out-of-scope edits; the run is not recoverable as partial success."
@@ -655,7 +752,8 @@ def inspect_abnormal_run(
         outcome = "partial_success"
         if validation_checks and all(check.result == "PASS" for check in validation_checks):
             summary = (
-                "Claude timed out after making meaningful in-scope changes; post-run checks passed."
+                "Claude exited abnormally after making meaningful in-scope changes; "
+                "post-run checks passed."
             )
         else:
             follow_up_recommended = True
@@ -665,7 +763,7 @@ def inspect_abnormal_run(
             if follow_up_actions:
                 recommended_next_slice = follow_up_actions[0]
             summary = (
-                "Claude timed out after making meaningful in-scope changes; "
+                "Claude exited abnormally after making meaningful in-scope changes; "
                 "the result is salvageable but still needs a narrow "
                 "follow-up or acceptance review."
             )
@@ -691,10 +789,16 @@ def inspect_abnormal_run(
         recommended_next_slice=recommended_next_slice,
         orchestration_mode=guidance.mode,
         orchestration_reason=guidance.reason,
+        run_outcome=run_kind,
+        acceptance_outcome=outcome,
+        failure_kind=failure_kind,
+        retry_eligible=is_retry_eligible(run_kind, materialization_state),
+        docs_overclaim_warnings=docs_overclaim_warnings,
     )
     inspection.debug_artifact_path = str(
         write_debug_artifact(
             task_id=task_id,
+            plan_path=plan_path,
             timeout_seconds=timeout_seconds,
             process_exit_code=process_exit_code,
             timed_out=timed_out,
@@ -702,6 +806,8 @@ def inspect_abnormal_run(
             stdout=stdout,
             stderr=stderr,
             inspection=inspection,
+            elapsed_seconds=elapsed_seconds,
+            is_retry_attempt=is_retry_attempt,
         )
     )
     return inspection
@@ -710,6 +816,7 @@ def inspect_abnormal_run(
 def write_debug_artifact(
     *,
     task_id: str,
+    plan_path: str | None = None,
     timeout_seconds: int,
     process_exit_code: int | None,
     timed_out: bool,
@@ -717,12 +824,15 @@ def write_debug_artifact(
     stdout: str,
     stderr: str,
     inspection: BridgeInspection,
+    elapsed_seconds: float = 0.0,
+    is_retry_attempt: bool = False,
 ) -> Path:
     DEBUG_ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
     path = DEBUG_ARTIFACT_DIR / f"{timestamp}-{task_id}.json"
     payload = {
         "task_id": task_id,
+        "plan_path": plan_path,
         "generated_at": datetime.now(UTC).isoformat(),
         "timeout_seconds": timeout_seconds,
         "timed_out": timed_out,
@@ -749,7 +859,14 @@ def write_debug_artifact(
         "orchestration_mode": inspection.orchestration_mode,
         "orchestration_reason": inspection.orchestration_reason,
         "outcome": inspection.outcome,
+        "run_outcome": inspection.run_outcome,
+        "acceptance_outcome": inspection.acceptance_outcome,
+        "failure_kind": inspection.failure_kind,
+        "retry_eligible": inspection.retry_eligible,
+        "docs_overclaim_warnings": inspection.docs_overclaim_warnings,
         "summary": inspection.summary,
+        "elapsed_seconds": round(elapsed_seconds, 3),
+        "is_retry_attempt": is_retry_attempt,
     }
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return path
@@ -783,6 +900,7 @@ def run_claude(
     timeout_seconds: int,
     output_format: str,
     no_session_persistence: bool,
+    _allow_retry: bool = True,
 ) -> int:
     task_id, brief, guidance = build_brief(plan_path, permission_mode)
     _, required_changes, _, validation_commands = extract_plan_scope(plan_path)
@@ -868,6 +986,7 @@ def run_claude(
         stdout_file.flush()
         stderr_file.flush()
 
+    run_elapsed = time.monotonic() - start
     stdout_file.seek(0)
     stderr_file.seek(0)
     captured_stdout = stdout_file.read()
@@ -878,6 +997,7 @@ def run_claude(
     if timed_out or early_abort:
         inspection = inspect_abnormal_run(
             task_id=task_id,
+            plan_path=str(plan_path),
             required_changes=required_changes,
             validation_commands=validation_commands,
             before_snapshot=before_snapshot,
@@ -888,6 +1008,8 @@ def run_claude(
             timed_out=timed_out,
             early_abort_triggered=early_abort,
             guidance=guidance,
+            elapsed_seconds=run_elapsed,
+            is_retry_attempt=not _allow_retry,
         )
         sys.stdout.write("## Handoff Runner\n")
         sys.stdout.write(f"- plan: {plan_path}\n")
@@ -967,6 +1089,7 @@ def run_claude(
     if completed.returncode != 0:
         inspection = inspect_abnormal_run(
             task_id=task_id,
+            plan_path=str(plan_path),
             required_changes=required_changes,
             validation_commands=validation_commands,
             before_snapshot=before_snapshot,
@@ -976,6 +1099,8 @@ def run_claude(
             process_exit_code=completed.returncode,
             timed_out=False,
             guidance=guidance,
+            elapsed_seconds=run_elapsed,
+            is_retry_attempt=not _allow_retry,
         )
         sys.stdout.write("## Bridge Inspection\n")
         sys.stdout.write(f"- outcome: {inspection.outcome}\n")
@@ -990,6 +1115,10 @@ def run_claude(
             sys.stdout.write(f"- recommended_next_slice: {inspection.recommended_next_slice}\n")
         sys.stdout.write(f"- debug_artifact: {inspection.debug_artifact_path}\n")
         sys.stdout.write(f"- summary: {inspection.summary}\n")
+        if inspection.docs_overclaim_warnings:
+            sys.stdout.write("- docs_overclaim_warnings:\n")
+            for warning in inspection.docs_overclaim_warnings:
+                sys.stdout.write(f"  - {warning}\n")
         if inspection.follow_up_actions:
             sys.stdout.write("- follow_up_actions:\n")
             for item in inspection.follow_up_actions:
@@ -1001,6 +1130,17 @@ def run_claude(
         sys.stdout.write("\n")
         if inspection.outcome == "partial_success":
             return 75
+        if inspection.retry_eligible and _allow_retry:
+            sys.stdout.write("- retry_reason: execution_failure with no_progress; retrying once\n\n")
+            return run_claude(
+                plan_path,
+                permission_mode,
+                claude_bin,
+                timeout_seconds,
+                output_format,
+                no_session_persistence,
+                _allow_retry=False,
+            )
 
     after_snapshot = capture_repo_snapshot(ROOT)
     changed_files = detect_changed_files(before_snapshot, after_snapshot)
